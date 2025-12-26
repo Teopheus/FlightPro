@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+        <h2 class="page-title">Gerenciar Ofertas</h2>
+        <p class="text-muted mb-0">Visualize e controle todas as pesquisas geradas.</p>
+    </div>
+    <a href="{{ url_for('register') }}" class="btn btn-primary-custom">
+        <i class="bi bi-plus-lg me-2"></i>Nova Oferta
+    </a>
+</div>
+
+<div class="card-custom p-0 overflow-hidden border-0 shadow-lg">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+            <thead style="background-color: #f8fafc;">
+                <tr>
+                    <th class="ps-4 py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Rota & Voo</th>
+                    <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Status & Cia</th>
+                    <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Investimento</th>
+                    <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Criado em</th>
+                    <th class="pe-4 py-4 text-end text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if not searches %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center justify-content-center text-muted opacity-50">
+                            <i class="bi bi-airplane-engines fs-1 mb-3"></i>
+                            <span>Nenhuma oferta registrada ainda.</span>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                    {% for search in searches %}
+                    <tr class="transition-hover">
+                        <td class="ps-4 py-3 border-bottom-0">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-light rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-geo-alt text-primary"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ search['origin'] }}</div>
+                                    <div class="small text-muted d-flex align-items-center" style="font-size: 0.8rem;">
+                                        <i class="bi bi-arrow-right mx-1"></i> {{ search['destination'] }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="py-3 border-bottom-0">
+                            {% set badge_bg = '#e0e7ff' %}
+                            {% set badge_color = '#4338ca' %}
+                            
+                            {% if search['flight_type'] == 'Econômica' %}
+                                {% set badge_bg = '#dcfce7' %}
+                                {% set badge_color = '#15803d' %}
+                            {% elif search['flight_type'] == 'Primeira Classe' %}
+                                {% set badge_bg = '#fef3c7' %}
+                                {% set badge_color = '#b45309' %}
+                            {% endif %}
+                            
+                            <span class="badge rounded-pill fw-bold border px-3 py-2 mb-1" 
+                                  style="background-color: {{ badge_bg }}; color: {{ badge_color }}; border-color: transparent;">
+                                {{ search['flight_type'] }}
+                            </span>
+                            <div class="small text-muted fw-medium mt-1">{{ search['operator'] }}</div>
+                        </td>
+
+                        <td class="py-3 border-bottom-0">
+                            <span class="fw-bold text-dark" style="font-family: monospace; font-size: 1rem;">
+                                R$ {{ search['cost'] }}
+                            </span>
+                        </td>
+
+                        <td class="py-3 border-bottom-0">
+                            <div class="text-muted small">
+                                <i class="bi bi-calendar3 me-2"></i>{{ search['search_date'] }}
+                            </div>
+                        </td>
+                        
+                        <td class="pe-4 py-3 text-end border-bottom-0">
+                            <div class="btn-group shadow-sm" role="group">
+                                <a href="{{ url_for('static', filename='generated/' + search['image_path']) }}" target="_blank" 
+                                   class="btn btn-white btn-sm border" title="Ver Imagem">
+                                    <i class="bi bi-eye text-primary"></i>
+                                </a>
+                                <a href="{{ url_for('edit_search', id=search['id']) }}" 
+                                   class="btn btn-white btn-sm border" title="Editar">
+                                    <i class="bi bi-pencil text-warning"></i>
+                                </a>
+                                <button type="button" class="btn btn-white btn-sm border" title="Excluir" 
+                                        onclick="if(confirm('Tem certeza?')) document.getElementById('del-form-{{ search.id }}').submit();">
+                                    <i class="bi bi-trash text-danger"></i>
+                                </button>
+                            </div>
+                            <form id="del-form-{{ search.id }}" action="{{ url_for('delete_search', id=search['id']) }}" method="POST" class="d-none"></form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+
+<div class="mb-4">
+    <h2 class="page-title">{{ 'Editar Oferta' if search else 'Nova Oferta' }}</h2>
+    <p class="text-muted mb-0">Preencha os dados abaixo para gerar o card de divulgação.</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card-custom border-0 shadow-sm">
+            
+            <form id="flightForm" action="{{ url_for('edit_search', id=search['id']) if search else url_for('register') }}" method="POST">
+                
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">Rota da Viagem</h5>
+                </div>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <input type="text" class="form-control live-input" id="origin" name="origin" placeholder="Origem" required
+                                   value="{{ search['origin'] if search else '' }}">
+                            <label>Origem (Ex: GRU)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <input type="text" class="form-control live-input" id="destination" name="destination" placeholder="Destino" required
+                                   value="{{ search['destination'] if search else '' }}">
+                            <label>Destino (Ex: MIA)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-3 pt-2 border-top"></div>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-ticket-perforated-fill"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">Detalhes do Voo</h5>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8">
+                        <div class="form-floating">
+                            <input type="text" class="form-control live-input" id="operator" name="operator" placeholder="Operador"
+                                   value="{{ search['operator'] if search else '' }}">
+                            <label>Companhia Aérea</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            <select class="form-select live-input" id="flight_type" name="flight_type">
+                                <option value="Executiva" {{ 'selected' if search and search['flight_type'] == 'Executiva' else '' }}>Executiva</option>
+                                <option value="Econômica" {{ 'selected' if search and search['flight_type'] == 'Econômica' else '' }}>Econômica</option>
+                                <option value="Primeira Classe" {{ 'selected' if search and search['flight_type'] == 'Primeira Classe' else '' }}>Primeira Classe</option>
+                            </select>
+                            <label>Classe</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-3 pt-2 border-top"></div>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">Custos e Milhas</h5>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-7">
+                        <div class="form-floating">
+                            <textarea class="form-control live-input" id="program" name="program" placeholder="Programa" 
+                                style="height: 100px; font-family: 'Courier New', monospace; font-size: 0.9rem;">{{ search['program'] if search else '' }}</textarea>
+                            <label>Programas (Um por linha)</label>
+                        </div>
+                        <div class="form-text text-muted x-small ms-1">
+                            Use Enter para separar programas. O "OU" é automático.
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <div class="input-group h-100 align-items-start">
+                            <span class="input-group-text bg-light text-muted border-end-0" style="height: 58px; border-color: var(--border-color);">R$</span>
+                            <div class="form-floating flex-grow-1">
+                                <input type="number" step="0.01" class="form-control live-input border-start-0" id="cost" name="cost" placeholder="0.00" style="height: 58px;"
+                                       value="{{ search['cost'] if search else '' }}">
+                                <label>Custo Monetário</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-3 pt-2 border-top"></div>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-calendar-range-fill"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">Datas Disponíveis</h5>
+                </div>
+
+                <div class="mb-4">
+                    <div class="input-group mb-2">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-week text-primary"></i></span>
+                        <input type="text" id="calendarPicker" class="form-control border-start-0" placeholder="Clique aqui para abrir o calendário...">
+                    </div>
+
+                    <label class="form-label text-muted x-small fw-bold text-uppercase mt-2">Resultado Formatado</label>
+                    <textarea id="available_dates" name="available_dates" class="form-control live-input bg-light text-dark" rows="4" 
+                        style="font-family: 'Courier New', monospace; font-size: 0.9rem; border: 1px dashed var(--border-color);"
+                        placeholder="Selecione acima ou digite: MAR: 17, 28">{{ search['available_dates'] if search else '' }}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                    <div class="form-floating w-50 me-3">
+                         <input type="date" class="form-control live-input" id="search_date" name="search_date" required
+                                value="{{ search['search_date'] if search else '' }}">
+                         <label>Data da Pesquisa</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary-custom btn-lg w-50 shadow-sm d-flex align-items-center justify-content-center">
+                        <i class="bi {{ 'bi-check-circle-fill' if search else 'bi-save-fill' }} me-2"></i>
+                        {{ 'Salvar Alterações' if search else 'Criar Pesquisa' }}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="sticky-top" style="top: 20px; z-index: 900;">
+            <div class="card border-0 text-white text-center p-4 shadow-lg" 
+                 style="background-color: var(--sidebar-bg); border-radius: var(--radius-lg);">
+                
+                <h6 class="mb-4 text-white-50 text-uppercase fw-bold" style="letter-spacing: 1.5px; font-size: 0.75rem;">
+                    <i class="bi bi-eye me-2"></i>Preview em Tempo Real
+                </h6>
+                
+                <div class="position-relative bg-white rounded-3 overflow-hidden shadow-sm mx-auto" style="min-height: 250px;">
+                    <img id="previewImage" 
+                         src="{{ url_for('static', filename='generated/' + search['image_path']) if search else '' }}" 
+                         alt="Preencha os dados" class="img-fluid w-100" 
+                         style="opacity: {{ '1' if search else '0.5' }}; transition: opacity 0.3s;">
+                    
+                    <div id="loadingSpinner" class="position-absolute top-50 start-50 translate-middle d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-grid gap-2">
+                    <button type="button" class="btn btn-outline-light btn-sm opacity-75" onclick="updatePreview()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+                    </button>
+                    
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-success flex-grow-1 fw-bold shadow-sm" onclick="copyImageToClipboard()">
+                            <i class="bi bi-whatsapp me-2"></i>Copiar Imagem
+                        </button>
+                    </div>
+                    
+                    <button type="button" class="btn btn-dark bg-opacity-50 border-0 btn-sm text-start ps-3" onclick="copyCaption()">
+                        <i class="bi bi-card-text me-2"></i> Copiar Legenda de Vendas
+                    </button>
+                </div>
+            </div>
+            
+            {% if search %}
+            <div class="alert alert-info mt-3 shadow-sm border-0 d-flex align-items-center" style="background-color: #e0f2fe; color: #0284c7;">
+                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                <small><strong>Modo Edição:</strong> Ao salvar, a imagem antiga será substituída pela nova versão.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. CONFIGURAÇÃO DO FLATPICKR ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+
+        flatpickr("#calendarPicker", {
+            mode: "multiple",
+            dateFormat: "Y-m-d",
+            locale: "pt",
+            minDate: "today",
+            showMonths: 2,
+            
+            onChange: function(selectedDates, dateStr, instance) {
+                if (selectedDates.length === 0) {
+                    document.getElementById('available_dates').value = "";
+                    updatePreview();
+                    return;
+                }
+                selectedDates.sort((a, b) => a - b);
+                let groups = {};
+                selectedDates.forEach(date => {
+                    let monthTag = monthNames[date.getMonth()];
+                    let day = date.getDate();
+                    if (!groups[monthTag]) groups[monthTag] = [];
+                    groups[monthTag].push(day);
+                });
+                let finalString = "";
+                for (let [month, days] of Object.entries(groups)) {
+                    finalString += `${month}: ${days.join(', ')}\n`;
+                }
+                document.getElementById('available_dates').value = finalString.trim();
+                updatePreview();
+            }
+        });
+
+        const dateField = document.getElementById('search_date');
+        if (!dateField.value) {
+            dateField.valueAsDate = new Date();
+            updatePreview(); 
+        }
+    });
+
+    // --- 2. FUNÇÕES AUXILIARES ---
+    function debounce(func, timeout = 600){
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+    }
+
+    async function updatePreview() {
+        const spinner = document.getElementById('loadingSpinner');
+        const img = document.getElementById('previewImage');
+        spinner.classList.remove('d-none');
+        img.style.opacity = '0.4';
+
+        const formData = {
+            origin: document.getElementById('origin').value,
+            destination: document.getElementById('destination').value,
+            operator: document.getElementById('operator').value,
+            flight_type: document.getElementById('flight_type').value,
+            program: document.getElementById('program').value,
+            cost: document.getElementById('cost').value,
+            available_dates: document.getElementById('available_dates').value,
+            search_date: document.getElementById('search_date').value
+        };
+
+        try {
+            const response = await fetch('/api/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            const data = await response.json();
+            if (data.image) {
+                img.src = "data:image/png;base64," + data.image;
+                img.style.opacity = '1';
+            }
+        } catch (error) { console.error(error); } 
+        finally { spinner.classList.add('d-none'); }
+    }
+
+    async function copyImageToClipboard() {
+        const img = document.getElementById('previewImage');
+        if (!img.src || img.src.includes('data:image') === false) { alert("Sem imagem!"); return; }
+        try {
+            const res = await fetch(img.src);
+            const blob = await res.blob();
+            await navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})]);
+            
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Copiado!';
+            btn.classList.remove('btn-success'); btn.classList.add('btn-light', 'text-success');
+            setTimeout(() => { 
+                btn.innerHTML = originalHTML; 
+                btn.classList.add('btn-success'); btn.classList.remove('btn-light', 'text-success'); 
+            }, 2000);
+        } catch (err) { alert('Erro ao copiar. Use HTTPS ou Localhost.'); }
+    }
+
+    function copyCaption() {
+        const origin = document.getElementById('origin').value;
+        const destination = document.getElementById('destination').value;
+        const operator = document.getElementById('operator').value;
+        const flightType = document.getElementById('flight_type').value;
+        const cost = document.getElementById('cost').value;
+        const program = document.getElementById('program').value.split('\n')[0] || "Pontos";
+
+        const caption = `✈️ *OFERTA: ${origin.toUpperCase()} ➝ ${destination.toUpperCase()}* ✈️\n\n` +
+            ` *Classe:* ${flightType}\n` +
+            ` *Cia Aérea:* ${operator}\n` +
+            ` *Valor:* ${program} + R$ ${cost}\n\n` +
+            ` *Datas disponíveis na imagem!*\n` +
+            ` _Chame para emitir!_`;
+
+        navigator.clipboard.writeText(caption).then(() => { alert("Legenda copiada!"); });
+    }
+
+    const inputs = document.querySelectorAll('.live-input');
+    const processChange = debounce(() => updatePreview());
+    inputs.forEach(input => {
+        input.addEventListener('input', processChange);
+        input.addEventListener('change', processChange);
+    });
+</script>
+{% endblock %}

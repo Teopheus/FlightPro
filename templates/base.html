@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Manager Pro</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Paleta de Cores Premium */
+            --primary: #4f46e5; /* Indigo */
+            --primary-hover: #4338ca;
+            --secondary: #64748b;
+            --bg-body: #f1f5f9; /* Cinza azulado muito claro */
+            --sidebar-bg: #0f172a; /* Slate Dark */
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- SIDEBAR MODERNA --- */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-brand {
+            padding: 30px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            padding: 16px 30px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link i { font-size: 1.2rem; margin-right: 12px; }
+
+        .nav-link:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .nav-link.active {
+            color: white;
+            background: rgba(79, 70, 229, 0.1); /* Tint de Indigo */
+            border-left-color: var(--primary);
+        }
+
+        /* --- ÁREA PRINCIPAL --- */
+        .main-content {
+            margin-left: 280px;
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        /* --- CARDS REFINADOS --- */
+        .card-custom {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card-custom:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        /* --- INPUTS & FORMS --- */
+        .form-control, .form-select {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); /* Anel de foco suave */
+        }
+
+        .form-floating > label {
+            color: var(--text-muted);
+            padding-left: 1rem;
+        }
+
+        /* --- BOTÕES --- */
+        .btn {
+            border-radius: var(--radius-md);
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary-custom {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-primary-custom:hover {
+            background-color: var(--primary-hover);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* --- UTILITÁRIOS --- */
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -0.5px;
+        }
+
+        /* Scrollbar mais bonita */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="bi bi-airplane-engines-fill me-3 text-primary" style="font-size: 1.5rem;"></i>
+            FlightPro
+        </div>
+        
+        <nav class="nav flex-column mt-2">
+            <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.path == '/dashboard' else '' }}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+
+        <nav class="nav flex-column mt-2">
+            <a href="{{ url_for('register') }}" class="nav-link {{ 'active' if request.path == '/register' or 'edit' in request.path else '' }}">
+                <i class="bi bi-plus-square"></i> Novo Voo
+            </a>
+            <a href="{{ url_for('list_searches') }}" class="nav-link {{ 'active' if request.path == '/list' or request.path == '/' else '' }}">
+                <i class="bi bi-grid"></i> Gerenciar Ofertas
+            </a>
+        </nav>
+
+        <div class="mt-auto p-4">
+            <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05);">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success rounded-circle" style="width: 8px; height: 8px; margin-right: 10px;"></div>
+                    <small class="text-white-50" style="font-size: 0.8rem;">Sistema Online v1.0</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

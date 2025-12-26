@@ -1,0 +1,14 @@
+
+services:
+  flight-manager:
+    build: .
+    container_name: flight_manager_app
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persistência: O banco de dados e as imagens ficam salvos fora do container
+      - ./database.db:/app/database.db
+      - ./static/generated:/app/static/generated
+    environment:
+      - FLASK_ENV=development
+    restart: unless-stopped
