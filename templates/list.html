@@ -46,6 +46,11 @@
                                     <div class="small text-muted d-flex align-items-center" style="font-size: 0.8rem;">
                                         <i class="bi bi-arrow-right mx-1"></i> {{ search['destination'] }}
                                     </div>
+                                    {% if search['origin_2'] and search['destination_2'] %}
+                                    <div class="small text-muted d-flex align-items-center mt-1" style="font-size: 0.7rem;">
+                                        <span class="badge bg-light text-secondary border me-1">2</span> {{ search['origin_2'] }} <i class="bi bi-arrow-right mx-1"></i> {{ search['destination_2'] }}
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </td>
@@ -70,9 +75,16 @@
                         </td>
 
                         <td class="py-3 border-bottom-0">
-                            <span class="fw-bold text-dark" style="font-family: monospace; font-size: 1rem;">
-                                R$ {{ search['cost'] }}
-                            </span>
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold text-dark" style="font-family: monospace; font-size: 1rem;">
+                                    R$ {{ search['cost_1'] or search['cost'] or '0,00' }}
+                                </span>
+                                {% if search['cost_2'] %}
+                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                        Opção 2: R$ {{ search['cost_2'] }}
+                                    </small>
+                                {% endif %}
+                            </div>
                         </td>
 
                         <td class="py-3 border-bottom-0">

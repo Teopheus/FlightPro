@@ -6,9 +6,10 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # Persistência: O banco de dados e as imagens ficam salvos fora do container
       - ./database.db:/app/database.db
       - ./static/generated:/app/static/generated
+      - ./app.py:/app/app.py  # <--- ESSENCIAL: Espelha o código Python
+      - ./templates:/app/templates # <--- ESSENCIAL: Espelha o HTML
     environment:
       - FLASK_ENV=development
     restart: unless-stopped

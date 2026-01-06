@@ -19,7 +19,7 @@
                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                         <i class="bi bi-airplane-fill"></i>
                     </div>
-                    <h5 class="fw-bold mb-0 text-dark">Dados Gerais</h5>
+                    <h5 class="fw-bold mb-0 text-dark">Dados Gerais (Voo 1)</h5>
                 </div>
                 
                 <div class="row g-3 mb-4">
@@ -79,7 +79,7 @@
                             <div class="col-md-5">
                                 <div class="form-floating">
                                     <input type="text" class="form-control live-input" id="cost_1" name="cost_1" placeholder="Custo" value="{{ search['cost_1'] if search else (search['cost'] if search else '') }}">
-                                    <label>Taxas/Custo (R$)</label>
+                                    <label>Taxas/Custo</label>
                                 </div>
                             </div>
                         </div>
@@ -102,8 +102,24 @@
                     <div class="tab-pane fade" id="opt2" role="tabpanel">
                         <div class="alert alert-light border small text-muted mb-3 d-flex align-items-center">
                             <i class="bi bi-info-circle-fill me-2 text-info"></i> 
-                            Preencha apenas se quiser exibir um segundo bloco de voos.
+                            Preencha se houver um segundo trecho (Volta) ou outra tarifa.
                         </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control live-input" id="origin_2" name="origin_2" placeholder="Origem" value="{{ search['origin_2'] if search else '' }}">
+                                    <label>Origem (Volta)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control live-input" id="destination_2" name="destination_2" placeholder="Destino" value="{{ search['destination_2'] if search else '' }}">
+                                    <label>Destino (Volta)</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row g-3 mb-3">
                             <div class="col-md-7">
                                 <div class="form-floating">
@@ -137,8 +153,8 @@
 
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="form-floating w-50 me-3">
-                         <input type="date" class="form-control live-input" id="search_date" name="search_date" required value="{{ search['search_date'] if search else '' }}">
-                         <label>Data da Pesquisa</label>
+                        <input type="text" class="form-control live-input" id="search_date" name="search_date" placeholder="DD/MM/AAAA" required value="{{ search['search_date'] if search else '' }}">
+                         <label>Data da Pesquisa (DD/MM/AAAA)</label>
                     </div>
                     <button type="submit" class="btn btn-primary-custom btn-lg w-50 shadow-sm">
                         <i class="bi bi-check2-circle me-2"></i> {{ 'Salvar Alterações' if search else 'Gerar Oferta' }}
@@ -184,7 +200,7 @@
         
         flatpickr(pickerId, {
             mode: "multiple",
-            dateFormat: "Y-m-d",
+            dateFormat: "d/m/Y", // Visual do picker
             locale: "pt",
             minDate: "today",
             showMonths: 1,
@@ -222,9 +238,20 @@
         setupCalendar("#calendarPicker1", "#dates_1", "#seats_1");
         setupCalendar("#calendarPicker2", "#dates_2", "#seats_2");
 
-        const dateField = document.getElementById('search_date');
-        if (!dateField.value) {
-            dateField.valueAsDate = new Date();
+        // --- CONFIGURAÇÃO ESPECIAL PARA DATA DA PESQUISA ---
+        // Isso garante que você veja DD/MM/AAAA, mas o servidor receba AAAA-MM-DD
+        const dateInput = document.getElementById('search_date');
+        
+        flatpickr(dateInput, {
+            dateFormat: "Y-m-d", // Formato REAL (que vai pro banco)
+            altInput: true,      // Habilita o campo visual alternativo
+            altFormat: "d/m/Y",  // Formato VISUAL (que você vê)
+            locale: "pt",
+            allowInput: true,    // Permite digitar manualmente
+            defaultDate: dateInput.value || new Date() // Mantém valor antigo ou põe hoje
+        });
+
+        if (!dateInput.value) {
             updatePreview(); 
         }
     });
@@ -257,7 +284,11 @@
             
             program_2: document.getElementById('program_2').value,
             cost_2: document.getElementById('cost_2').value,
-            dates_2: document.getElementById('dates_2').value
+            dates_2: document.getElementById('dates_2').value,
+            
+            // NOVOS CAMPOS
+            origin_2: document.getElementById('origin_2').value,
+            destination_2: document.getElementById('destination_2').value
         };
 
         try {

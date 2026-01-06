@@ -11,15 +11,14 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-# Em produção, use uma variável de ambiente
 app.secret_key = 'segredo_super_secreto_flight_manager'
 
-# --- CONFIGURAÇÃO DE LOGIN ---
+# --- LOGIN MANAGER ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- CONFIGURAÇÕES DE ARQUIVOS ---
+# --- CONFIGS ---
 DB_NAME = "database.db"
 IMAGE_FOLDER = os.path.join('static', 'generated')
 TEMPLATE_PATH = os.path.join('static', 'template_fundo.png')
@@ -28,7 +27,6 @@ FONT_REGULAR_PATH = os.path.join('static', 'fonts', 'Montserrat-Regular.ttf')
 
 os.makedirs(IMAGE_FOLDER, exist_ok=True)
 
-# Tenta configurar moeda brasileira
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 except:
@@ -37,7 +35,7 @@ except:
     except:
         pass
 
-# --- MODELO DE USUÁRIO ---
+# --- MODELO USUÁRIO ---
 class User(UserMixin):
     def __init__(self, id, username, password):
         self.id = str(id)
@@ -55,12 +53,12 @@ def load_user(user_id):
         return User(id=data[0], username=data[1], password=data[2])
     return None
 
-# --- BANCO DE DADOS (COM MIGRAÇÃO) ---
+# --- BANCO DE DADOS (COM MIGRAÇÃO AUTO) ---
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # 1. Tabela de Pesquisas (Base)
+    # Tabela Base
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS searches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,42 +74,36 @@ def init_db():
         )
     ''')
     
-    # 2. Migração Automática: Adiciona colunas novas se não existirem
+    # Migração: Adiciona colunas novas se não existirem
     cursor.execute("PRAGMA table_info(searches)")
     columns = [info[1] for info in cursor.fetchall()]
     
-    new_columns = [
-        ('program_1', 'TEXT'), ('cost_1', 'REAL'), ('dates_1', 'TEXT'),
-        ('program_2', 'TEXT'), ('cost_2', 'REAL'), ('dates_2', 'TEXT')
+    # Lista de colunas novas (incluindo as de origem/destino da volta)
+    new_cols = [
+        ('program_1', 'TEXT'), ('cost_1', 'TEXT'), ('dates_1', 'TEXT'),
+        ('program_2', 'TEXT'), ('cost_2', 'TEXT'), ('dates_2', 'TEXT'),
+        ('origin_2', 'TEXT'), ('destination_2', 'TEXT') # <--- NOVAS
     ]
     
-    for col_name, col_type in new_columns:
+    for col_name, col_type in new_cols:
         if col_name not in columns:
-            print(f"Migrando BD: Adicionando coluna {col_name}...")
+            print(f"Migrando BD: Criando coluna {col_name}...")
             try:
                 cursor.execute(f"ALTER TABLE searches ADD COLUMN {col_name} {col_type}")
             except Exception as e:
-                print(f"Erro ao adicionar {col_name}: {e}")
+                print(f"Erro ao migrar {col_name}: {e}")
 
-    # 3. Tabela de Usuários
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT
-        )
-    ''')
+    # Tabela Usuários
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)''')
     
-    # 4. Usuário Admin Padrão
     cursor.execute("SELECT * FROM users WHERE username = 'admin'")
     if not cursor.fetchone():
-        hashed_pw = generate_password_hash('admin123')
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", ('admin', hashed_pw))
+        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", ('admin', generate_password_hash('admin123')))
         
     conn.commit()
     conn.close()
 
-# --- MOTOR DE GERAÇÃO DE IMAGEM ---
+# --- MOTOR GRÁFICO ---
 def create_image_object(data):
     try:
         img = Image.open(TEMPLATE_PATH).convert("RGB")
@@ -120,92 +112,101 @@ def create_image_object(data):
     
     draw = ImageDraw.Draw(img)
 
-    # Carregamento de Fontes
-    def load_font(path, system_alt, size):
+    def load_font(path, size):
         try: return ImageFont.truetype(path, size)
         except: return ImageFont.load_default()
 
-    font_header_sm = load_font(FONT_REGULAR_PATH, "arial.ttf", 28)
-    font_header_lg = load_font(FONT_BOLD_PATH, "arialbd.ttf", 45)
-    font_cost      = load_font(FONT_BOLD_PATH, "arialbd.ttf", 32)
-    font_dates     = load_font(FONT_BOLD_PATH, "arialbd.ttf", 24)
-    font_footer    = load_font(FONT_REGULAR_PATH, "arial.ttf", 18)
-    font_sep       = load_font(FONT_REGULAR_PATH, "arial.ttf", 20)
-    font_vagas     = load_font(FONT_REGULAR_PATH, "arial.ttf", 14)
+    # Fontes
+    font_header_sm = load_font(FONT_REGULAR_PATH, 28)
+    font_header_lg = load_font(FONT_BOLD_PATH, 45)
+    font_cost      = load_font(FONT_BOLD_PATH, 32)
+    font_dates     = load_font(FONT_BOLD_PATH, 24)
+    font_footer    = load_font(FONT_REGULAR_PATH, 18)
+    font_sep       = load_font(FONT_REGULAR_PATH, 20)
+    font_vagas     = load_font(FONT_REGULAR_PATH, 14)
 
-    color_blue, color_dark, color_grey, color_white = "#0054a6", "#333333", "#777777", "#ffffff"
+    # Cores
+    c_blue, c_dark, c_grey, c_white = "#0054a6", "#333333", "#777777", "#ffffff"
     margin_left = 50
 
-    # Dados Gerais
+    # Cabeçalho Fixo (Opção 1)
     flight_type = (data.get('flight_type') or "").upper()
     operator = (data.get('operator') or "").upper()
     origin = (data.get('origin') or "")
-    destination = (data.get('destination') or "")
+    dest = (data.get('destination') or "")
 
-    # Desenha Cabeçalho Fixo
-    draw.text((margin_left, 50), f"{flight_type} {operator}", fill=color_blue, font=font_header_sm)
-    draw.text((margin_left, 100), f"{origin} - {destination}", fill=color_blue, font=font_header_lg)
+    draw.text((margin_left, 50), f"{flight_type} {operator}", fill=c_blue, font=font_header_sm)
+    draw.text((margin_left, 100), f"{origin} - {dest}", fill=c_blue, font=font_header_lg)
 
-    # --- FUNÇÃO AUXILIAR DE DESENHO DE BLOCO ---
-    def draw_section(start_y, p_prog, p_cost, p_dates):
-        current_y = start_y
+    # --- FUNÇÃO DE BLOCO ---
+    def draw_block(start_y, prog_txt, cost_txt, dates_txt):
+        curr_y = start_y
         
         # Formata Custo
+        cost_display = cost_txt or ""
         try:
-            val = float(p_cost or 0)
-            c_fmt = locale.currency(val, grouping=True) if 'locale' in sys.modules and val > 0 else (f"R$ {val:,.2f}" if val > 0 else "")
-        except:
-            c_fmt = str(p_cost) if p_cost else ""
+            val = float(str(cost_txt).replace(',', '.'))
+            if val > 0:
+                cost_display = locale.currency(val, grouping=True) if 'locale' in sys.modules else f"R$ {val:,.2f}"
+        except: pass
 
-        programs = [x.strip() for x in (p_prog or "").split('\n') if x.strip()]
+        progs = [p.strip() for p in (prog_txt or "").split('\n') if p.strip()]
         
-        if not programs:
-            if c_fmt:
-                draw.text((margin_left, current_y), f"Custo: {c_fmt}", fill=color_dark, font=font_cost)
-                current_y += 45
+        if not progs:
+            if cost_display:
+                draw.text((margin_left, curr_y), f"Custo: {cost_display}", fill=c_dark, font=font_cost)
+                curr_y += 45
         else:
-            for i, line in enumerate(programs):
+            for i, p in enumerate(progs):
                 if i > 0:
-                    draw.text((margin_left + 20, current_y), "OU", fill=color_grey, font=font_sep)
-                    current_y += 30
+                    draw.text((margin_left + 20, curr_y), "OU", fill=c_grey, font=font_sep)
+                    curr_y += 30
                 
-                text = line
-                if i == 0 and c_fmt:
-                    text += f" + {c_fmt}"
+                line = p
+                if i == 0 and cost_display:
+                    line += f" + {cost_display}"
                 
-                draw.text((margin_left, current_y), text, fill=color_dark, font=font_cost)
-                current_y += 45
+                draw.text((margin_left, curr_y), line, fill=c_dark, font=font_cost)
+                curr_y += 45
         
         # Datas
-        current_y += 10
-        d_lines = (p_dates or "").split('\n')
+        curr_y += 10
+        d_lines = (dates_txt or "").split('\n')
         for l in d_lines:
             if l.strip():
-                draw.text((margin_left, current_y), l.strip().upper(), fill=color_dark, font=font_dates)
-                current_y += 35
+                draw.text((margin_left, curr_y), l.strip().upper(), fill=c_dark, font=font_dates)
+                curr_y += 35
         
-        return current_y + 40 # Retorna Y para o próximo bloco
+        return curr_y + 40 
 
     # Desenha Bloco 1
-    y_pos = 200
-    y_pos = draw_section(y_pos, data.get('program_1'), data.get('cost_1'), data.get('dates_1'))
+    cursor_y = 200
+    cursor_y = draw_block(cursor_y, data.get('program_1'), data.get('cost_1'), data.get('dates_1'))
 
-    # Desenha Bloco 2 (Se existir)
+    # Desenha Bloco 2
     if data.get('program_2') or data.get('dates_2'):
-        # Verifica limite de altura para não estourar
-        if y_pos < 920:
-            y_pos = draw_section(y_pos, data.get('program_2'), data.get('cost_2'), data.get('dates_2'))
+        # Verifica se tem Rota Específica para o Bloco 2
+        orig2 = data.get('origin_2')
+        dest2 = data.get('destination_2')
+        
+        if orig2 and dest2:
+            # Desenha Novo Cabeçalho de Rota
+            draw.text((margin_left, cursor_y + 10), f"{orig2} - {dest2}", fill=c_blue, font=font_header_lg)
+            cursor_y += 70 # Empurra cursor para baixo
+
+        if cursor_y < 920:
+            cursor_y = draw_block(cursor_y, data.get('program_2'), data.get('cost_2'), data.get('dates_2'))
 
     # Rodapé
-    footer_date = "Pesquisa realizada..."
+    footer_txt = "Pesquisa realizada..."
     if data.get('search_date'):
         try:
-            footer_date = datetime.strptime(data.get('search_date'), '%Y-%m-%d').strftime("Pesquisa realizada no dia %d de %B de %Y.")
+            dt = datetime.strptime(data.get('search_date'), '%Y-%m-%d')
+            footer_txt = dt.strftime("Pesquisa realizada no dia %d de %B de %Y.")
         except: pass
     
-    # Texto de aviso de vagas
-    draw.text((margin_left, 940), "Em parênteses a quantidade de vagas em cada data.", fill=color_white, font=font_vagas)
-    draw.text((margin_left, 970), footer_date, fill=color_white, font=font_footer)
+    draw.text((margin_left, 940), "Em parênteses a quantidade de vagas em cada data.", fill=c_white, font=font_vagas)
+    draw.text((margin_left, 970), footer_txt, fill=c_white, font=font_footer)
 
     return img
 
@@ -214,20 +215,17 @@ def create_image_object(data):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
+        user = request.form['username']
+        pwd = request.form['password']
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT * FROM users WHERE username = ?", (user,))
         ud = cursor.fetchone()
         conn.close()
-        
-        if ud and check_password_hash(ud[2], password):
+        if ud and check_password_hash(ud[2], pwd):
             login_user(User(id=ud[0], username=ud[1], password=ud[2]))
             return redirect(url_for('dashboard'))
-        else:
-            flash('Login inválido', 'danger')
+        flash('Credenciais inválidas', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -243,32 +241,19 @@ def index():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Mantive lógica simples para o dashboard funcionar
-    # Usamos cost_1 como referência de valor para os KPIs
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT COUNT(*) as t, SUM(cost_1) as v, AVG(cost_1) as a FROM searches")
-    kpis = cursor.fetchone()
-    
+    cursor.execute("SELECT COUNT(*) as t FROM searches")
+    total = cursor.fetchone()['t']
     cursor.execute("SELECT destination, COUNT(*) as c FROM searches GROUP BY destination ORDER BY c DESC LIMIT 5")
-    dest = cursor.fetchall()
-    
-    cursor.execute("SELECT operator, COUNT(*) as c FROM searches GROUP BY operator ORDER BY c DESC LIMIT 5")
-    airline = cursor.fetchall()
-    
-    cursor.execute("SELECT strftime('%m/%Y', search_date) as m, COUNT(*) as c FROM searches WHERE search_date IS NOT NULL GROUP BY m ORDER BY search_date ASC LIMIT 6")
-    time = cursor.fetchall()
+    dest_rows = cursor.fetchall()
     conn.close()
-
     return render_template('dashboard.html', 
-                           total_searches=kpis['t'] or 0, 
-                           total_volume=kpis['v'] or 0, 
-                           avg_ticket=kpis['a'] or 0,
-                           dest_labels=[r['destination'] for r in dest], dest_data=[r['c'] for r in dest],
-                           airline_labels=[r['operator'] for r in airline], airline_data=[r['c'] for r in airline],
-                           time_labels=[r['m'] for r in time], time_data=[r['c'] for r in time])
+                           total_searches=total, total_volume=0, avg_ticket=0,
+                           dest_labels=[r['destination'] for r in dest_rows], 
+                           dest_data=[r['c'] for r in dest_rows],
+                           airline_labels=[], airline_data=[], time_labels=[], time_data=[])
 
 @app.route('/register', methods=['GET', 'POST'])
 @login_required
@@ -281,20 +266,19 @@ def register():
 
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        # Salva nos campos novos E nos antigos (para compatibilidade)
         cursor.execute('''
             INSERT INTO searches (
                 origin, destination, operator, flight_type, search_date, image_path,
                 program_1, cost_1, dates_1,
                 program_2, cost_2, dates_2,
-                cost, program, available_dates
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                origin_2, destination_2
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             d.get('origin'), d.get('destination'), d.get('operator'), d.get('flight_type'), 
             d.get('search_date'), fname,
             d.get('program_1'), d.get('cost_1'), d.get('dates_1'),
             d.get('program_2'), d.get('cost_2'), d.get('dates_2'),
-            d.get('cost_1'), d.get('program_1'), d.get('dates_1') # Retrocompatibilidade
+            d.get('origin_2'), d.get('destination_2')
         ))
         conn.commit()
         conn.close()
@@ -319,14 +303,14 @@ def edit_search(id):
                 origin=?, destination=?, operator=?, flight_type=?, search_date=?, image_path=?,
                 program_1=?, cost_1=?, dates_1=?,
                 program_2=?, cost_2=?, dates_2=?,
-                cost=?, program=?, available_dates=?
+                origin_2=?, destination_2=?
             WHERE id=?
         ''', (
             d.get('origin'), d.get('destination'), d.get('operator'), d.get('flight_type'), 
             d.get('search_date'), fname,
             d.get('program_1'), d.get('cost_1'), d.get('dates_1'),
             d.get('program_2'), d.get('cost_2'), d.get('dates_2'),
-            d.get('cost_1'), d.get('program_1'), d.get('dates_1'),
+            d.get('origin_2'), d.get('destination_2'),
             id
         ))
         conn.commit()
