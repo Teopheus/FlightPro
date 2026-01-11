@@ -293,12 +293,36 @@ def index(): return redirect(url_for('dashboard' if current_user.is_authenticate
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    conn = sqlite3.connect(DB_NAME); conn.row_factory = sqlite3.Row; cursor = conn.cursor()
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # 1. Total de Buscas
     cursor.execute("SELECT COUNT(*) as t FROM searches")
-    total = cursor.fetchone()['t']
+    row = cursor.fetchone()
+    total = row['t'] if row else 0
+    
+    # 2. Destinos mais buscados
     cursor.execute("SELECT destination, COUNT(*) as c FROM searches GROUP BY destination ORDER BY c DESC LIMIT 5")
-    dest_rows = cursor.fetchall(); conn.close()
-    return render_template('dashboard.html', total_searches=total, dest_labels=[r['destination'] for r in dest_rows], dest_data=[r['c'] for r in dest_rows])
+    dest_rows = cursor.fetchall()
+    
+    conn.close()
+    
+    # Proteção: Se 'destination' for None no banco, usa "Indefinido"
+    dest_labels = [(r['destination'] if r['destination'] else 'Indefinido') for r in dest_rows]
+    dest_data = [r['c'] for r in dest_rows]
+
+    # Retorna o template com TODAS as variáveis que o HTML original espera (mesmo que vazias)
+    return render_template('dashboard.html', 
+                           total_searches=total, 
+                           total_volume=0,    # Placeholder para evitar erro
+                           avg_ticket=0,      # Placeholder para evitar erro
+                           dest_labels=dest_labels, 
+                           dest_data=dest_data,
+                           airline_labels=[], # Lista vazia para evitar erro
+                           airline_data=[],   # Lista vazia para evitar erro
+                           time_labels=[],    # Lista vazia para evitar erro
+                           time_data=[])      # Lista vazia para evitar erro
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
