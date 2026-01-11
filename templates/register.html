@@ -11,7 +11,7 @@
 </div>
 
 <div class="row g-4">
-    <div class="col-lg-7">
+    <div class="col-12">
         <div class="card-custom border-0 shadow-sm">
             <form id="flightForm" action="{{ url_for('edit_search', id=search['id']) if search else url_for('register') }}" method="POST">
                 
@@ -25,25 +25,25 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="form-floating">
-                            <input type="text" class="form-control live-input" id="origin" name="origin" placeholder="Origem" required value="{{ search['origin'] if search else '' }}">
+                            <input type="text" class="form-control" name="origin" placeholder="Origem" required value="{{ search['origin'] if search else '' }}">
                             <label>Origem (Ex: GRU)</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-floating">
-                            <input type="text" class="form-control live-input" id="destination" name="destination" placeholder="Destino" required value="{{ search['destination'] if search else '' }}">
+                            <input type="text" class="form-control" name="destination" placeholder="Destino" required value="{{ search['destination'] if search else '' }}">
                             <label>Destino (Ex: LIS)</label>
                         </div>
                     </div>
                     <div class="col-md-8">
                         <div class="form-floating">
-                            <input type="text" class="form-control live-input" id="operator" name="operator" placeholder="Operador" value="{{ search['operator'] if search else '' }}">
+                            <input type="text" class="form-control" name="operator" placeholder="Operador" value="{{ search['operator'] if search else '' }}">
                             <label>Companhia Aérea</label>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-floating">
-                            <select class="form-select live-input" id="flight_type" name="flight_type">
+                            <select class="form-select" name="flight_type">
                                 <option value="Executiva" {{ 'selected' if search and search['flight_type'] == 'Executiva' else '' }}>Executiva</option>
                                 <option value="Econômica" {{ 'selected' if search and search['flight_type'] == 'Econômica' else '' }}>Econômica</option>
                                 <option value="Primeira Classe" {{ 'selected' if search and search['flight_type'] == 'Primeira Classe' else '' }}>Primeira Classe</option>
@@ -54,35 +54,19 @@
                 </div>
 
                 <ul class="nav nav-tabs mb-3" id="flightTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold" id="opt1-tab" data-bs-toggle="tab" data-bs-target="#opt1" type="button" role="tab">
-                            <i class="bi bi-1-circle me-1"></i> Opção 1 (Ida)
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-muted" id="opt2-tab" data-bs-toggle="tab" data-bs-target="#opt2" type="button" role="tab">
-                            <i class="bi bi-2-circle me-1"></i> Opção 2 (Volta/Alt)
-                        </button>
-                    </li>
+                    <li class="nav-item"><button class="nav-link active fw-bold" id="opt1-tab" data-bs-toggle="tab" data-bs-target="#opt1" type="button">① Opção 1 (Ida)</button></li>
+                    <li class="nav-item"><button class="nav-link fw-bold text-muted" id="opt2-tab" data-bs-toggle="tab" data-bs-target="#opt2" type="button">② Opção 2 (Volta/Alt)</button></li>
                 </ul>
 
                 <div class="tab-content border-bottom mb-4 pb-4" id="flightTabsContent">
                     
-                    <div class="tab-pane fade show active" id="opt1" role="tabpanel">
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-7">
-                                <div class="form-floating">
-                                    <textarea class="form-control live-input" id="program_1" name="program_1" placeholder="Programa" style="height: 100px; font-family: monospace; font-size: 0.9rem;">{{ search['program_1'] if search else (search['program'] if search else '') }}</textarea>
-                                    <label>Programa + Milhas</label>
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control live-input" id="cost_1" name="cost_1" placeholder="Custo" value="{{ search['cost_1'] if search else (search['cost'] if search else '') }}">
-                                    <label>Taxas/Custo</label>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="tab-pane fade show active" id="opt1">
+                        
+                        <div id="prices-container-1"></div>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-4" onclick="addPriceRow(1)">
+                            <i class="bi bi-plus-lg me-1"></i> Adicionar Outra Tarifa
+                        </button>
 
                         <div class="bg-light p-3 rounded border">
                             <div class="row align-items-end mb-2">
@@ -95,45 +79,26 @@
                                     <input type="number" id="seats_1" class="form-control text-center fw-bold" value="2" min="1">
                                 </div>
                             </div>
-                            <textarea id="dates_1" name="dates_1" class="form-control live-input text-muted" rows="4" style="font-family: monospace; font-size: 0.9rem; background: #fff;" placeholder="As datas aparecerão aqui...">{{ search['dates_1'] if search else (search['available_dates'] if search else '') }}</textarea>
+                            <textarea id="dates_1" name="dates_1" class="form-control text-muted" rows="4" style="font-family: monospace;">{{ search['dates_1'] if search else (search['available_dates'] if search else '') }}</textarea>
                         </div>
                     </div>
 
-                    <div class="tab-pane fade" id="opt2" role="tabpanel">
+                    <div class="tab-pane fade" id="opt2">
                         <div class="alert alert-light border small text-muted mb-3 d-flex align-items-center">
                             <i class="bi bi-info-circle-fill me-2 text-info"></i> 
                             Preencha se houver um segundo trecho (Volta) ou outra tarifa.
                         </div>
 
                         <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control live-input" id="origin_2" name="origin_2" placeholder="Origem" value="{{ search['origin_2'] if search else '' }}">
-                                    <label>Origem (Volta)</label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control live-input" id="destination_2" name="destination_2" placeholder="Destino" value="{{ search['destination_2'] if search else '' }}">
-                                    <label>Destino (Volta)</label>
-                                </div>
-                            </div>
+                            <div class="col-md-6"><div class="form-floating"><input type="text" class="form-control" name="origin_2" value="{{ search['origin_2'] if search else '' }}"><label>Origem</label></div></div>
+                            <div class="col-md-6"><div class="form-floating"><input type="text" class="form-control" name="destination_2" value="{{ search['destination_2'] if search else '' }}"><label>Destino</label></div></div>
                         </div>
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-7">
-                                <div class="form-floating">
-                                    <textarea class="form-control live-input" id="program_2" name="program_2" placeholder="Programa" style="height: 100px; font-family: monospace; font-size: 0.9rem;">{{ search['program_2'] if search else '' }}</textarea>
-                                    <label>Programa + Milhas (Opção 2)</label>
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control live-input" id="cost_2" name="cost_2" placeholder="Custo" value="{{ search['cost_2'] if search else '' }}">
-                                    <label>Taxas/Custo (Opção 2)</label>
-                                </div>
-                            </div>
-                        </div>
+                        <div id="prices-container-2"></div>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-4" onclick="addPriceRow(2)">
+                            <i class="bi bi-plus-lg me-1"></i> Adicionar Outra Tarifa
+                        </button>
 
                         <div class="bg-light p-3 rounded border">
                             <div class="row align-items-end mb-2">
@@ -146,14 +111,14 @@
                                     <input type="number" id="seats_2" class="form-control text-center fw-bold" value="2" min="1">
                                 </div>
                             </div>
-                            <textarea id="dates_2" name="dates_2" class="form-control live-input text-muted" rows="4" style="font-family: monospace; font-size: 0.9rem; background: #fff;" placeholder="As datas aparecerão aqui...">{{ search['dates_2'] if search else '' }}</textarea>
+                            <textarea id="dates_2" name="dates_2" class="form-control text-muted" rows="4" style="font-family: monospace;">{{ search['dates_2'] if search else '' }}</textarea>
                         </div>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="form-floating w-50 me-3">
-                        <input type="text" class="form-control live-input" id="search_date" name="search_date" placeholder="DD/MM/AAAA" required value="{{ search['search_date'] if search else '' }}">
+                        <input type="text" class="form-control" id="search_date" name="search_date" placeholder="DD/MM/AAAA" required value="{{ search['search_date'] if search else '' }}">
                          <label>Data da Pesquisa (DD/MM/AAAA)</label>
                     </div>
                     <button type="submit" class="btn btn-primary-custom btn-lg w-50 shadow-sm">
@@ -163,59 +128,85 @@
             </form>
         </div>
     </div>
-
-    <div class="col-lg-5">
-        <div class="sticky-top" style="top: 20px;">
-            <div class="card border-0 text-white text-center p-3 shadow-lg" style="background-color: var(--sidebar-bg); border-radius: 16px;">
-                <h6 class="mb-3 text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">
-                    <i class="bi bi-eye me-2"></i>Visualização
-                </h6>
-                <div class="position-relative bg-white rounded-3 overflow-hidden shadow-sm mx-auto">
-                    <img id="previewImage" src="{{ url_for('static', filename='generated/' + search['image_path']) if search else '' }}" class="img-fluid w-100" style="opacity: 0.8; transition: opacity 0.3s;">
-                    <div id="loadingSpinner" class="position-absolute top-50 start-50 translate-middle d-none">
-                        <div class="spinner-border text-primary" role="status"></div>
-                    </div>
-                </div>
-                
-                <div class="mt-3 d-grid gap-2">
-                    <button type="button" class="btn btn-outline-light btn-sm opacity-75" onclick="updatePreview()">
-                        <i class="bi bi-arrow-repeat"></i> Atualizar
-                    </button>
-                    <button type="button" class="btn btn-success fw-bold shadow-sm" onclick="copyImageToClipboard()">
-                        <i class="bi bi-whatsapp me-2"></i>Copiar Imagem
-                    </button>
-                    <button type="button" class="btn btn-dark bg-opacity-50 border-0 btn-sm" onclick="copyCaption()">
-                        <i class="bi bi-card-text me-2"></i>Copiar Legenda
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
-    // --- LÓGICA DO CALENDÁRIO COM VAGAS ---
+    // Gera as opções dos selects uma única vez via Jinja2
+    const PROGRAM_OPTIONS = `{% for p in programs %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}`;
+    const CURRENCY_OPTIONS = `{% for c in currencies %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}`;
+    
+    // Recupera dados salvos do backend (caso seja edição) ou array vazio
+    const SAVED_PRICES_1 = {{ search.prices_1 | tojson if search and search.prices_1 else '[]' }};
+    const SAVED_PRICES_2 = {{ search.prices_2 | tojson if search and search.prices_2 else '[]' }};
+</script>
+
+<script>
+    // --- FUNÇÕES DE PREÇOS DINÂMICOS ---
+    function addPriceRow(optIndex, data = null) {
+        const container = document.getElementById(`prices-container-${optIndex}`);
+        const rowId = Date.now() + Math.random().toString(16).slice(2); // ID único
+        
+        // Valores iniciais (se for edição ou vazio)
+        const milesVal = data ? data.miles : '';
+        const progVal = data ? data.prog_id : '';
+        const taxVal = data ? data.tax : '';
+        const currVal = data ? data.curr_id : '';
+
+        const html = `
+        <div class="card mb-2 border bg-light position-relative" id="row-${rowId}">
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-2 small" aria-label="Remover" onclick="removeRow('${rowId}')" style="z-index: 5;"></button>
+            <div class="card-body p-3">
+                <div class="row g-2">
+                    <div class="col-md-7">
+                        <label class="small text-muted mb-1">Milhas + Programa</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="miles_${optIndex}[]" placeholder="Ex: 65000" value="${milesVal}">
+                            <select class="form-select" name="prog_${optIndex}[]" style="max-width: 150px;">
+                                <option value="">Programa...</option>
+                                ${PROGRAM_OPTIONS}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="small text-muted mb-1">Taxas</label>
+                        <div class="input-group">
+                            <select class="form-select bg-white" name="curr_${optIndex}[]" style="max-width: 90px;">
+                                ${CURRENCY_OPTIONS}
+                            </select>
+                            <input type="text" class="form-control" name="tax_${optIndex}[]" placeholder="150,00" value="${taxVal}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        container.insertAdjacentHTML('beforeend', html);
+        
+        // Define os valores selecionados nos dropdowns
+        if(data) {
+            const lastRow = document.getElementById(`row-${rowId}`);
+            if(progVal) lastRow.querySelector(`select[name="prog_${optIndex}[]"]`).value = progVal;
+            if(currVal) lastRow.querySelector(`select[name="curr_${optIndex}[]"]`).value = currVal;
+        }
+    }
+
+    function removeRow(rowId) {
+        const row = document.getElementById(`row-${rowId}`);
+        if(row) row.remove();
+    }
+
+    // --- LÓGICA DO CALENDÁRIO ---
     function setupCalendar(pickerId, outputId, seatsId) {
         const monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-        
         flatpickr(pickerId, {
-            mode: "multiple",
-            dateFormat: "d/m/Y", // Visual do picker
-            locale: "pt",
-            minDate: "today",
-            showMonths: 1,
+            mode: "multiple", dateFormat: "d/m/Y", locale: "pt", minDate: "today", showMonths: 1,
             onChange: function(selectedDates) {
-                if (selectedDates.length === 0) {
-                    document.querySelector(outputId).value = "";
-                    updatePreview();
-                    return;
-                }
+                if (selectedDates.length === 0) { document.querySelector(outputId).value = ""; return; }
                 selectedDates.sort((a, b) => a - b);
                 
-                // Pega vagas
                 let seatsVal = document.querySelector(seatsId).value;
                 let seatSuffix = seatsVal ? `(${seatsVal})` : "";
-
+                
                 let groups = {};
                 selectedDates.forEach(date => {
                     let monthTag = monthNames[date.getMonth()];
@@ -223,13 +214,12 @@
                     if (!groups[monthTag]) groups[monthTag] = [];
                     groups[monthTag].push(day + seatSuffix);
                 });
-
+                
                 let finalString = "";
                 for (let [month, days] of Object.entries(groups)) {
                     finalString += `${month}: ${days.join(', ')}\n`;
                 }
                 document.querySelector(outputId).value = finalString.trim();
-                updatePreview();
             }
         });
     }
@@ -237,107 +227,27 @@
     document.addEventListener('DOMContentLoaded', function() {
         setupCalendar("#calendarPicker1", "#dates_1", "#seats_1");
         setupCalendar("#calendarPicker2", "#dates_2", "#seats_2");
-
-        // --- CONFIGURAÇÃO ESPECIAL PARA DATA DA PESQUISA ---
-        // Isso garante que você veja DD/MM/AAAA, mas o servidor receba AAAA-MM-DD
-        const dateInput = document.getElementById('search_date');
         
+        const dateInput = document.getElementById('search_date');
         flatpickr(dateInput, {
-            dateFormat: "Y-m-d", // Formato REAL (que vai pro banco)
-            altInput: true,      // Habilita o campo visual alternativo
-            altFormat: "d/m/Y",  // Formato VISUAL (que você vê)
-            locale: "pt",
-            allowInput: true,    // Permite digitar manualmente
-            defaultDate: dateInput.value || new Date() // Mantém valor antigo ou põe hoje
+            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", allowInput: true,
+            defaultDate: dateInput.value || new Date()
         });
 
-        if (!dateInput.value) {
-            updatePreview(); 
+        // --- INICIALIZAÇÃO DE PREÇOS ---
+        // Opção 1 (Ida)
+        if (SAVED_PRICES_1.length > 0) {
+            SAVED_PRICES_1.forEach(p => addPriceRow(1, p));
+        } else {
+            addPriceRow(1); // Cria pelo menos uma linha vazia
         }
-    });
 
-    // --- PREVIEW E UTILITÁRIOS ---
-    function debounce(func, timeout = 600){
-        let timer;
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => { func.apply(this, args); }, timeout);
-        };
-    }
-
-    async function updatePreview() {
-        const spinner = document.getElementById('loadingSpinner');
-        const img = document.getElementById('previewImage');
-        spinner.classList.remove('d-none');
-        img.style.opacity = '0.4';
-
-        const formData = {
-            origin: document.getElementById('origin').value,
-            destination: document.getElementById('destination').value,
-            operator: document.getElementById('operator').value,
-            flight_type: document.getElementById('flight_type').value,
-            search_date: document.getElementById('search_date').value,
-            
-            program_1: document.getElementById('program_1').value,
-            cost_1: document.getElementById('cost_1').value,
-            dates_1: document.getElementById('dates_1').value,
-            
-            program_2: document.getElementById('program_2').value,
-            cost_2: document.getElementById('cost_2').value,
-            dates_2: document.getElementById('dates_2').value,
-            
-            // NOVOS CAMPOS
-            origin_2: document.getElementById('origin_2').value,
-            destination_2: document.getElementById('destination_2').value
-        };
-
-        try {
-            const response = await fetch('/api/preview', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            const data = await response.json();
-            if (data.image) {
-                img.src = "data:image/png;base64," + data.image;
-                img.style.opacity = '1';
-            }
-        } catch (error) { console.error(error); } 
-        finally { spinner.classList.add('d-none'); }
-    }
-    
-    async function copyImageToClipboard() {
-        const img = document.getElementById('previewImage');
-        if (!img.src.includes('data:image')) { alert("Gere o preview primeiro!"); return; }
-        try {
-            const res = await fetch(img.src);
-            const blob = await res.blob();
-            await navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})]);
-            alert("Copiado com sucesso!");
-        } catch (e) { alert("Erro ao copiar (Use HTTPS ou Localhost)."); }
-    }
-
-    function copyCaption() {
-        const origin = document.getElementById('origin').value;
-        const dest = document.getElementById('destination').value;
-        const op = document.getElementById('operator').value;
-        const cost1 = document.getElementById('cost_1').value;
-        const prog1 = document.getElementById('program_1').value.split('\n')[0] || "Pontos";
-
-        const caption = `✈️ *OFERTA: ${origin} ➝ ${dest}* ✈️\n\n` +
-            `🏢 *Cia:* ${op}\n` +
-            `💎 *Valor:* ${prog1} + R$ ${cost1}\n\n` +
-            `📅 *Datas e Vagas na Imagem!*\n` +
-            `📲 _Chame para emitir!_`;
-        
-        navigator.clipboard.writeText(caption).then(() => alert("Legenda copiada!"));
-    }
-
-    const inputs = document.querySelectorAll('.live-input');
-    const processChange = debounce(() => updatePreview());
-    inputs.forEach(input => {
-        input.addEventListener('input', processChange);
-        input.addEventListener('change', processChange);
+        // Opção 2 (Volta)
+        if (SAVED_PRICES_2.length > 0) {
+            SAVED_PRICES_2.forEach(p => addPriceRow(2, p));
+        } else {
+            addPriceRow(2); // Cria linha vazia padrão
+        }
     });
 </script>
 {% endblock %}

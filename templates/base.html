@@ -186,6 +186,9 @@
             <a href="{{ url_for('list_searches') }}" class="nav-link {{ 'active' if request.path == '/list' or request.path == '/' else '' }}">
                 <i class="bi bi-grid"></i> Gerenciar Ofertas
             </a>
+            <a href="{{ url_for('settings') }}" class="nav-link {{ 'active' if request.path == '/settings' else '' }}">
+                <i class="bi bi-gear"></i> Configurações
+            </a>
         </nav>
 
         <div class="mt-auto p-4">
