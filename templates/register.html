@@ -5,6 +5,16 @@
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/imask/6.4.3/imask.min.js"></script>
+
+<style>
+    .date-tabs .nav-link { color: #6c757d; font-size: 0.85rem; padding: 0.5rem 1rem; border: 1px solid transparent; border-bottom: none; }
+    .date-tabs .nav-link.active { color: #0d6efd; background-color: #fff; border-color: #dee2e6 #dee2e6 #fff; font-weight: bold; }
+    .date-tabs { border-bottom: 1px solid #dee2e6; margin-bottom: 0; }
+    .date-content { border: 1px solid #dee2e6; border-top: none; background: #fff; border-radius: 0 0 0.375rem 0.375rem; padding: 1rem; }
+    .date-header { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem 0.375rem 0 0; padding: 0.5rem 1rem 0; }
+    .excel-paste-area { font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; }
+</style>
 
 <div class="mb-4">
     <h2 class="page-title">{{ 'Editar Oferta' if search else 'Nova Oferta' }}</h2>
@@ -15,6 +25,29 @@
         <div class="card-custom border-0 shadow-sm">
             <form id="flightForm" action="{{ url_for('edit_search', id=search['id']) if search else url_for('register') }}" method="POST">
                 
+                <div class="mb-4 p-3 bg-light rounded border">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select fw-bold text-dark" id="selected_bg" name="selected_bg">
+                                    <option value="">Padrão (Azul)</option>
+                                    {% if templates %}
+                                        {% for t in templates %}
+                                        <option value="{{ t }}" {{ 'selected' if search and search['selected_bg'] == t else '' }}>
+                                            {{ t|replace('.png', '')|replace('_', ' ')|title }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <label for="selected_bg"><i class="bi bi-palette-fill me-2"></i>Estilo da Imagem</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-muted small mt-2 mt-md-0">
+                            <i class="bi bi-info-circle me-1"></i> Selecione o visual desejado para a geração da imagem.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="d-flex align-items-center mb-3">
                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                         <i class="bi bi-airplane-fill"></i>
@@ -61,69 +94,129 @@
                 <div class="tab-content border-bottom mb-4 pb-4" id="flightTabsContent">
                     
                     <div class="tab-pane fade show active" id="opt1">
-                        
                         <div id="prices-container-1"></div>
-                        
                         <button type="button" class="btn btn-sm btn-outline-primary mb-4" onclick="addPriceRow(1)">
                             <i class="bi bi-plus-lg me-1"></i> Adicionar Outra Tarifa
                         </button>
 
-                        <div class="bg-light p-3 rounded border">
-                            <div class="row align-items-end mb-2">
-                                <div class="col-md-9">
-                                    <label class="small fw-bold text-muted mb-1"><i class="bi bi-calendar-event me-1"></i>Datas Disponíveis</label>
-                                    <input type="text" id="calendarPicker1" class="form-control" placeholder="Clique para selecionar datas...">
+                        <div class="date-header">
+                            <ul class="nav nav-tabs date-tabs" id="datesTabs1" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active" id="cal-tab-1" data-bs-toggle="tab" data-bs-target="#cal-view-1" type="button"><i class="bi bi-calendar3 me-1"></i>Visual</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" id="list-tab-1" data-bs-toggle="tab" data-bs-target="#list-view-1" type="button"><i class="bi bi-list-check me-1"></i>Lista</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" id="import-tab-1" data-bs-toggle="tab" data-bs-target="#import-view-1" type="button"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Importar</button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="date-content">
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="cal-view-1">
+                                    <div class="row align-items-end g-2">
+                                        <div class="col-md-9">
+                                            <label class="small text-muted fw-bold mb-1">Selecionar Datas</label>
+                                            <input type="text" id="flatpickr_1" class="form-control bg-white" placeholder="Clique para abrir o calendário...">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="small text-muted fw-bold mb-1">Vagas Padrão</label>
+                                            <input type="number" id="default_seats_1" class="form-control text-center fw-bold" value="1" min="1" title="Vagas aplicadas ao clicar no calendário">
+                                        </div>
+                                    </div>
+                                    <div class="form-text small mt-2 text-muted">
+                                        <i class="bi bi-info-circle me-1"></i> Dias clicados recebem o nº de "Vagas Padrão". Use a aba Lista para editar.
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="small fw-bold text-muted mb-1">Vagas</label>
-                                    <input type="number" id="seats_1" class="form-control text-center fw-bold" value="2" min="1">
+                                <div class="tab-pane fade" id="list-view-1">
+                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover align-middle mb-0">
+                                            <thead class="table-light sticky-top">
+                                                <tr><th>Data</th><th style="width: 100px;">Vagas</th><th style="width: 50px;"></th></tr>
+                                            </thead>
+                                            <tbody id="dates_table_1"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="input-group input-group-sm mt-3 pt-3 border-top">
+                                        <span class="input-group-text bg-light">Manual:</span>
+                                        <input type="text" id="manual_date_1" class="form-control date-mask" placeholder="DD/MM/AAAA">
+                                        <input type="number" id="manual_seats_1" class="form-control" placeholder="Vagas" value="1" style="max-width: 80px;">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="dateManager1.addManual()">OK</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="import-view-1">
+                                    <label class="small text-muted fw-bold mb-2">Cole as colunas do Excel (Data | Vagas)</label>
+                                    <textarea id="import_text_1" class="form-control excel-paste-area mb-3" rows="5" placeholder="Exemplo:&#10;15/05/2026&#09;2&#10;16/05/2026&#09;1&#10;20/05/2026"></textarea>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Aceita formato DD/MM/AAAA. Vagas são opcionais (padrão 1).</small>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="dateManager1.importFromExcel()"><i class="bi bi-check-lg me-1"></i>Processar Importação</button>
+                                    </div>
                                 </div>
                             </div>
-                            <textarea id="dates_1" name="dates_1" class="form-control text-muted" rows="4" style="font-family: monospace;">{{ search['dates_1'] if search else (search['available_dates'] if search else '') }}</textarea>
+                            <textarea id="final_dates_1" name="dates_1" class="d-none">{{ search['dates_1'] if search else (search['available_dates'] if search else '') }}</textarea>
                         </div>
                     </div>
 
                     <div class="tab-pane fade" id="opt2">
-                        <div class="alert alert-light border small text-muted mb-3 d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill me-2 text-info"></i> 
-                            Preencha se houver um segundo trecho (Volta) ou outra tarifa.
-                        </div>
-
                         <div class="row g-3 mb-3">
-                            <div class="col-md-6"><div class="form-floating"><input type="text" class="form-control" name="origin_2" value="{{ search['origin_2'] if search else '' }}"><label>Origem</label></div></div>
-                            <div class="col-md-6"><div class="form-floating"><input type="text" class="form-control" name="destination_2" value="{{ search['destination_2'] if search else '' }}"><label>Destino</label></div></div>
+                            <div class="col-md-6"><div class="form-floating"><input type="text" class="form-control" name="origin_2" value="{{ search['origin_2'] if search else '' }}"><label>Origem (Volta)</label></div></div>
+                            <div class="col-md-6"><div class="form-floating"><input type="text" class="form-control" name="destination_2" value="{{ search['destination_2'] if search else '' }}"><label>Destino (Volta)</label></div></div>
                         </div>
 
                         <div id="prices-container-2"></div>
-                        
                         <button type="button" class="btn btn-sm btn-outline-primary mb-4" onclick="addPriceRow(2)">
                             <i class="bi bi-plus-lg me-1"></i> Adicionar Outra Tarifa
                         </button>
 
-                        <div class="bg-light p-3 rounded border">
-                            <div class="row align-items-end mb-2">
-                                <div class="col-md-9">
-                                    <label class="small fw-bold text-muted mb-1"><i class="bi bi-calendar-event me-1"></i>Datas (Opção 2)</label>
-                                    <input type="text" id="calendarPicker2" class="form-control" placeholder="Clique para selecionar datas...">
+                        <div class="date-header">
+                            <ul class="nav nav-tabs date-tabs" id="datesTabs2" role="tablist">
+                                <li class="nav-item"><button class="nav-link active" id="cal-tab-2" data-bs-toggle="tab" data-bs-target="#cal-view-2" type="button"><i class="bi bi-calendar3 me-1"></i>Visual</button></li>
+                                <li class="nav-item"><button class="nav-link" id="list-tab-2" data-bs-toggle="tab" data-bs-target="#list-view-2" type="button"><i class="bi bi-list-check me-1"></i>Lista</button></li>
+                                <li class="nav-item"><button class="nav-link" id="import-tab-2" data-bs-toggle="tab" data-bs-target="#import-view-2" type="button"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Importar</button></li>
+                            </ul>
+                        </div>
+                        <div class="date-content">
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="cal-view-2">
+                                    <div class="row align-items-end g-2">
+                                        <div class="col-md-9"><label class="small text-muted fw-bold mb-1">Selecionar Datas</label><input type="text" id="flatpickr_2" class="form-control bg-white" placeholder="Abrir calendário..."></div>
+                                        <div class="col-md-3"><label class="small text-muted fw-bold mb-1">Vagas Padrão</label><input type="number" id="default_seats_2" class="form-control text-center fw-bold" value="1" min="1"></div>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="small fw-bold text-muted mb-1">Vagas</label>
-                                    <input type="number" id="seats_2" class="form-control text-center fw-bold" value="2" min="1">
+                                <div class="tab-pane fade" id="list-view-2">
+                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover align-middle mb-0">
+                                            <thead class="table-light sticky-top"><tr><th>Data</th><th style="width: 100px;">Vagas</th><th style="width: 50px;"></th></tr></thead>
+                                            <tbody id="dates_table_2"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="input-group input-group-sm mt-3 pt-3 border-top">
+                                        <span class="input-group-text bg-light">Manual:</span>
+                                        <input type="text" id="manual_date_2" class="form-control date-mask" placeholder="DD/MM/AAAA">
+                                        <input type="number" id="manual_seats_2" class="form-control" value="1" style="max-width: 80px;">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="dateManager2.addManual()">OK</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="import-view-2">
+                                    <label class="small text-muted fw-bold mb-2">Cole as colunas do Excel</label>
+                                    <textarea id="import_text_2" class="form-control excel-paste-area mb-3" rows="5" placeholder="15/05/2026&#09;2"></textarea>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Formato: DD/MM/AAAA [TAB] Vagas</small>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="dateManager2.importFromExcel()"><i class="bi bi-check-lg me-1"></i>Processar</button>
+                                    </div>
                                 </div>
                             </div>
-                            <textarea id="dates_2" name="dates_2" class="form-control text-muted" rows="4" style="font-family: monospace;">{{ search['dates_2'] if search else '' }}</textarea>
+                            <textarea id="final_dates_2" name="dates_2" class="d-none">{{ search['dates_2'] if search else '' }}</textarea>
                         </div>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="form-floating w-50 me-3">
-                        <input type="text" class="form-control" id="search_date" name="search_date" placeholder="DD/MM/AAAA" required value="{{ search['search_date'] if search else '' }}">
-                         <label>Data da Pesquisa (DD/MM/AAAA)</label>
+                        <input type="text" class="form-control" id="search_date" name="search_date" placeholder="DD/MM/AAAA" required value="{{ search['search_date'] if search else '' }}"><label>Data da Pesquisa</label>
                     </div>
-                    <button type="submit" class="btn btn-primary-custom btn-lg w-50 shadow-sm">
-                        <i class="bi bi-check2-circle me-2"></i> {{ 'Salvar Alterações' if search else 'Gerar Oferta' }}
-                    </button>
+                    <button type="submit" class="btn btn-primary-custom btn-lg w-50 shadow-sm"><i class="bi bi-check2-circle me-2"></i> {{ 'Salvar Alterações' if search else 'Gerar Oferta' }}</button>
                 </div>
             </form>
         </div>
@@ -131,26 +224,252 @@
 </div>
 
 <script>
-    // Gera as opções dos selects uma única vez via Jinja2
     const PROGRAM_OPTIONS = `{% for p in programs %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}`;
     const CURRENCY_OPTIONS = `{% for c in currencies %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}`;
-    
-    // Recupera dados salvos do backend (caso seja edição) ou array vazio
     const SAVED_PRICES_1 = {{ search.prices_1 | tojson if search and search.prices_1 else '[]' }};
     const SAVED_PRICES_2 = {{ search.prices_2 | tojson if search and search.prices_2 else '[]' }};
 </script>
 
 <script>
-    // --- FUNÇÕES DE PREÇOS DINÂMICOS ---
+    class DateManager {
+        constructor(id) {
+            this.id = id;
+            this.data = []; 
+            this.monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+            
+            this.fpInput = document.getElementById(`flatpickr_${id}`);
+            this.defSeatsInput = document.getElementById(`default_seats_${id}`);
+            this.tableBody = document.getElementById(`dates_table_${id}`);
+            this.outputArea = document.getElementById(`final_dates_${id}`);
+            this.manualDateInput = document.getElementById(`manual_date_${id}`);
+            this.manualSeatsInput = document.getElementById(`manual_seats_${id}`);
+
+            this.fpInstance = flatpickr(this.fpInput, {
+                mode: "multiple",
+                dateFormat: "Y-m-d",
+                locale: "pt",
+                minDate: "today",
+                onChange: (selectedDates, dateStr) => this.handleCalendarChange(selectedDates)
+            });
+
+            if(this.manualDateInput) {
+                IMask(this.manualDateInput, { mask: Date, pattern: 'd{`}/m{`}/Y' });
+            }
+
+            this.loadFromText(this.outputArea.value);
+        }
+
+        handleCalendarChange(selectedDates) {
+            const defSeats = parseInt(this.defSeatsInput.value) || 1;
+            const newDateStrings = selectedDates.map(d => this.formatDateISO(d));
+            
+            // Mantém datas existentes, remove as desmarcadas
+            this.data = this.data.filter(item => newDateStrings.includes(item.dateStr));
+
+            // Adiciona novas datas
+            newDateStrings.forEach(isoDate => {
+                if (!this.data.find(d => d.dateStr === isoDate)) {
+                    this.data.push({
+                        dateStr: isoDate,
+                        display: this.formatDateBr(isoDate),
+                        seats: defSeats
+                    });
+                }
+            });
+
+            this.data.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+            this.renderTable();
+            this.updateOutput();
+        }
+
+        renderTable() {
+            this.tableBody.innerHTML = "";
+            this.data.forEach((item, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.display}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center" 
+                               value="${item.seats}" min="1" 
+                               onchange="dateManager${this.id}.updateSeats(${index}, this.value)">
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0" 
+                                onclick="dateManager${this.id}.removeDate(${index})">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </td>
+                `;
+                this.tableBody.appendChild(row);
+            });
+        }
+
+        updateSeats(index, newVal) {
+            this.data[index].seats = parseInt(newVal) || 1;
+            this.updateOutput();
+        }
+
+        removeDate(index) {
+            this.data.splice(index, 1);
+            this.syncCalendar(); 
+            this.renderTable();
+            this.updateOutput();
+        }
+
+        addManual() {
+            const val = this.manualDateInput.value;
+            const seats = parseInt(this.manualSeatsInput.value) || 1;
+            if (val.length !== 10) return;
+
+            const [d, m, y] = val.split('/');
+            const iso = `${y}-${m}-${d}`;
+
+            if (!this.data.find(x => x.dateStr === iso)) {
+                this.data.push({ dateStr: iso, display: val, seats: seats });
+                this.data.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                this.syncCalendar();
+                this.renderTable();
+                this.updateOutput();
+                this.manualDateInput.value = ""; 
+            }
+        }
+
+        // --- NOVA FUNÇÃO: IMPORTAR DO EXCEL ---
+        importFromExcel() {
+            const textArea = document.getElementById(`import_text_${this.id}`);
+            const text = textArea.value;
+            if (!text.trim()) return;
+
+            const lines = text.split('\n');
+            let count = 0;
+
+            lines.forEach(line => {
+                // Remove espaços e divide por Tab (\t) ou múltiplos espaços
+                const parts = line.trim().split(/\t+| {2,}/);
+                
+                if (parts.length > 0) {
+                    const dateStrRaw = parts[0].trim();
+                    const seatStr = parts.length > 1 ? parts[1].trim() : '';
+
+                    // Valida DD/MM/AAAA
+                    if (dateStrRaw.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+                        const [d, m, y] = dateStrRaw.split('/');
+                        // Formata para ISO YYYY-MM-DD
+                        const iso = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                        const display = `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`;
+                        const seats = parseInt(seatStr) || 1; // Padrão 1 se vazio
+
+                        // Atualiza se existir ou Cria novo
+                        const existing = this.data.find(x => x.dateStr === iso);
+                        if (existing) {
+                            existing.seats = seats;
+                        } else {
+                            this.data.push({ dateStr: iso, display: display, seats: seats });
+                        }
+                        count++;
+                    }
+                }
+            });
+
+            if (count > 0) {
+                this.data.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                this.syncCalendar();
+                this.renderTable();
+                this.updateOutput();
+                alert(`${count} datas importadas com sucesso!`);
+                textArea.value = ""; // Limpa a área
+                // Muda para a aba de lista para ver o resultado
+                const listTab = new bootstrap.Tab(document.getElementById(`list-tab-${this.id}`));
+                listTab.show();
+            } else {
+                alert("Nenhuma data válida encontrada. Certifique-se de copiar colunas do Excel (Data | Vagas).");
+            }
+        }
+
+        syncCalendar() {
+            const isoArray = this.data.map(d => d.dateStr);
+            this.fpInstance.setDate(isoArray);
+        }
+
+        updateOutput() {
+            if (this.data.length === 0) {
+                this.outputArea.value = "";
+                return;
+            }
+
+            const groups = {};
+            this.data.forEach(item => {
+                const [y, m, d] = item.dateStr.split('-');
+                const mName = this.monthNames[parseInt(m) - 1];
+                if (!groups[mName]) groups[mName] = [];
+                groups[mName].push(`${parseInt(d)}(${item.seats})`);
+            });
+
+            let finalStr = "";
+            for (const [month, days] of Object.entries(groups)) {
+                finalStr += `${month}: ${days.join(', ')}\n`;
+            }
+            this.outputArea.value = finalStr.trim();
+        }
+
+        loadFromText(text) {
+            if (!text) return;
+            const lines = text.split('\n');
+            const currentYear = new Date().getFullYear();
+            const currentMonthIndex = new Date().getMonth();
+
+            lines.forEach(line => {
+                const parts = line.split(':');
+                if (parts.length < 2) return;
+                
+                const mName = parts[0].trim().toUpperCase();
+                const mIndex = this.monthNames.indexOf(mName);
+                if (mIndex === -1) return;
+
+                let y = currentYear;
+                if (mIndex < currentMonthIndex) y++;
+
+                const daysStr = parts[1].trim();
+                const daysItems = daysStr.split(',');
+                
+                daysItems.forEach(dayItem => {
+                    const match = dayItem.trim().match(/(\d+)(?:\((\d+)\))?/);
+                    if (match) {
+                        const d = match[1].padStart(2, '0');
+                        const s = match[2] ? parseInt(match[2]) : 1; 
+                        const m = (mIndex + 1).toString().padStart(2, '0');
+                        const iso = `${y}-${m}-${d}`;
+                        
+                        if(!this.data.find(x => x.dateStr === iso)) {
+                            this.data.push({
+                                dateStr: iso,
+                                display: `${d}/${m}/${y}`,
+                                seats: s
+                            });
+                        }
+                    }
+                });
+            });
+            this.syncCalendar();
+            this.renderTable();
+        }
+
+        formatDateISO(dateObj) {
+            const offset = dateObj.getTimezoneOffset();
+            const d = new Date(dateObj.getTime() - (offset*60*1000));
+            return d.toISOString().split('T')[0];
+        }
+        formatDateBr(isoStr) {
+            const [y, m, d] = isoStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+    }
+
     function addPriceRow(optIndex, data = null) {
         const container = document.getElementById(`prices-container-${optIndex}`);
-        const rowId = Date.now() + Math.random().toString(16).slice(2); // ID único
-        
-        // Valores iniciais (se for edição ou vazio)
-        const milesVal = data ? data.miles : '';
-        const progVal = data ? data.prog_id : '';
-        const taxVal = data ? data.tax : '';
-        const currVal = data ? data.curr_id : '';
+        const rowId = Date.now() + Math.random().toString(16).slice(2);
+        const milesVal = data ? data.miles : ''; const progVal = data ? data.prog_id : '';
+        const taxVal = data ? data.tax : ''; const currVal = data ? data.curr_id : '';
 
         const html = `
         <div class="card mb-2 border bg-light position-relative" id="row-${rowId}">
@@ -160,7 +479,7 @@
                     <div class="col-md-7">
                         <label class="small text-muted mb-1">Milhas + Programa</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" name="miles_${optIndex}[]" placeholder="Ex: 65000" value="${milesVal}">
+                            <input type="number" class="form-control" name="miles_${optIndex}[]" placeholder="65000" value="${milesVal}">
                             <select class="form-select" name="prog_${optIndex}[]" style="max-width: 150px;">
                                 <option value="">Programa...</option>
                                 ${PROGRAM_OPTIONS}
@@ -179,75 +498,29 @@
                 </div>
             </div>
         </div>`;
-        
         container.insertAdjacentHTML('beforeend', html);
-        
-        // Define os valores selecionados nos dropdowns
         if(data) {
             const lastRow = document.getElementById(`row-${rowId}`);
             if(progVal) lastRow.querySelector(`select[name="prog_${optIndex}[]"]`).value = progVal;
             if(currVal) lastRow.querySelector(`select[name="curr_${optIndex}[]"]`).value = currVal;
         }
     }
+    function removeRow(rowId) { document.getElementById(`row-${rowId}`).remove(); }
 
-    function removeRow(rowId) {
-        const row = document.getElementById(`row-${rowId}`);
-        if(row) row.remove();
-    }
-
-    // --- LÓGICA DO CALENDÁRIO ---
-    function setupCalendar(pickerId, outputId, seatsId) {
-        const monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-        flatpickr(pickerId, {
-            mode: "multiple", dateFormat: "d/m/Y", locale: "pt", minDate: "today", showMonths: 1,
-            onChange: function(selectedDates) {
-                if (selectedDates.length === 0) { document.querySelector(outputId).value = ""; return; }
-                selectedDates.sort((a, b) => a - b);
-                
-                let seatsVal = document.querySelector(seatsId).value;
-                let seatSuffix = seatsVal ? `(${seatsVal})` : "";
-                
-                let groups = {};
-                selectedDates.forEach(date => {
-                    let monthTag = monthNames[date.getMonth()];
-                    let day = date.getDate();
-                    if (!groups[monthTag]) groups[monthTag] = [];
-                    groups[monthTag].push(day + seatSuffix);
-                });
-                
-                let finalString = "";
-                for (let [month, days] of Object.entries(groups)) {
-                    finalString += `${month}: ${days.join(', ')}\n`;
-                }
-                document.querySelector(outputId).value = finalString.trim();
-            }
-        });
-    }
+    let dateManager1, dateManager2;
 
     document.addEventListener('DOMContentLoaded', function() {
-        setupCalendar("#calendarPicker1", "#dates_1", "#seats_1");
-        setupCalendar("#calendarPicker2", "#dates_2", "#seats_2");
-        
+        dateManager1 = new DateManager(1);
+        dateManager2 = new DateManager(2);
+
         const dateInput = document.getElementById('search_date');
         flatpickr(dateInput, {
             dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", allowInput: true,
             defaultDate: dateInput.value || new Date()
         });
 
-        // --- INICIALIZAÇÃO DE PREÇOS ---
-        // Opção 1 (Ida)
-        if (SAVED_PRICES_1.length > 0) {
-            SAVED_PRICES_1.forEach(p => addPriceRow(1, p));
-        } else {
-            addPriceRow(1); // Cria pelo menos uma linha vazia
-        }
-
-        // Opção 2 (Volta)
-        if (SAVED_PRICES_2.length > 0) {
-            SAVED_PRICES_2.forEach(p => addPriceRow(2, p));
-        } else {
-            addPriceRow(2); // Cria linha vazia padrão
-        }
+        if (SAVED_PRICES_1.length > 0) { SAVED_PRICES_1.forEach(p => addPriceRow(1, p)); } else { addPriceRow(1); }
+        if (SAVED_PRICES_2.length > 0) { SAVED_PRICES_2.forEach(p => addPriceRow(2, p)); } else { addPriceRow(2); }
     });
 </script>
 {% endblock %}

@@ -3,7 +3,7 @@ import sys
 import sqlite3
 import io
 import base64
-import json  # Importante para salvar as listas
+import json
 import locale
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
@@ -19,15 +19,18 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- CAMINHOS ---
+# --- CONFIGURAÇÕES DE CAMINHO ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "database.db")
 IMAGE_FOLDER = os.path.join(BASE_DIR, 'static', 'generated')
-TEMPLATE_PATH = os.path.join(BASE_DIR, 'static', 'template_fundo.png') 
+TEMPLATES_FOLDER = os.path.join(BASE_DIR, 'static', 'templates')
+DEFAULT_TEMPLATE_PATH = os.path.join(BASE_DIR, 'static', 'template_fundo.png') 
+
 FONT_BOLD_PATH = os.path.join(BASE_DIR, 'static', 'fonts', 'Montserrat-Bold.ttf')
 FONT_REGULAR_PATH = os.path.join(BASE_DIR, 'static', 'fonts', 'Montserrat-Regular.ttf')
 
 os.makedirs(IMAGE_FOLDER, exist_ok=True)
+os.makedirs(TEMPLATES_FOLDER, exist_ok=True)
 
 try: locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 except: 
@@ -52,29 +55,30 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Tabela principal com novos campos JSON para suportar múltiplos preços
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS searches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             origin TEXT, destination TEXT, operator TEXT, flight_type TEXT,
             search_date TEXT, image_path TEXT, 
-            
             program_1 TEXT, cost_1 TEXT, dates_1 TEXT, 
             program_2 TEXT, cost_2 TEXT, dates_2 TEXT, 
             origin_2 TEXT, destination_2 TEXT,
-            
             available_dates TEXT,
-            
-            -- CAMPOS JSON PARA MÚLTIPLOS PREÇOS
-            prices_json_1 TEXT,
-            prices_json_2 TEXT
+            prices_json_1 TEXT, prices_json_2 TEXT,
+            miles_qty_1 TEXT, prog_id_1 INTEGER, tax_val_1 TEXT, curr_id_1 INTEGER,
+            miles_qty_2 TEXT, prog_id_2 INTEGER, tax_val_2 TEXT, curr_id_2 INTEGER,
+            selected_bg TEXT
         )
     ''')
     
-    # Migração segura
     cursor.execute("PRAGMA table_info(searches)")
     cols = [info[1] for info in cursor.fetchall()]
-    new_cols = [('prices_json_1', 'TEXT'), ('prices_json_2', 'TEXT')]
+    new_cols = [
+        ('prices_json_1', 'TEXT'), ('prices_json_2', 'TEXT'),
+        ('miles_qty_1', 'TEXT'), ('prog_id_1', 'INTEGER'), ('tax_val_1', 'TEXT'), ('curr_id_1', 'INTEGER'),
+        ('miles_qty_2', 'TEXT'), ('prog_id_2', 'INTEGER'), ('tax_val_2', 'TEXT'), ('curr_id_2', 'INTEGER'),
+        ('selected_bg', 'TEXT')
+    ]
     for cname, ctype in new_cols:
         if cname not in cols:
             try: cursor.execute(f"ALTER TABLE searches ADD COLUMN {cname} {ctype}")
@@ -83,7 +87,6 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS programs (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS currencies (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT)''')
     
-    # Seeds
     cursor.execute("SELECT count(*) FROM programs")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("INSERT INTO programs (name) VALUES (?)", [('Latam Pass',), ('Smiles',), ('AAdvantage',), ('KrissFlyer',), ('TAP Miles&Go',), ('Iberia Plus',), ('Privilege Club',)])
@@ -99,12 +102,8 @@ def init_db():
     
     conn.commit(); conn.close()
 
-# --- HELPER: PROCESSAR LISTAS DE PREÇOS ---
+# --- HELPER: PROCESSAR PREÇOS ---
 def process_prices(prefix, form, conn):
-    """
-    Lê as listas do formulário (miles[], prog[], etc), monta o JSON para salvar
-    e a String formatada para a imagem.
-    """
     miles_list = form.getlist(f'miles_{prefix}[]')
     prog_list = form.getlist(f'prog_{prefix}[]')
     curr_list = form.getlist(f'curr_{prefix}[]')
@@ -114,53 +113,81 @@ def process_prices(prefix, form, conn):
     text_lines = []
     
     cursor = conn.cursor()
-    
-    # Dicionários para lookup rápido de nomes
     cursor.execute("SELECT id, name FROM programs")
     progs_map = {str(r[0]): r[1] for r in cursor.fetchall()}
-    
     cursor.execute("SELECT id, code FROM currencies")
     currs_map = {str(r[0]): r[1] for r in cursor.fetchall()}
     
     for i in range(len(miles_list)):
         m = miles_list[i]
+        if not m: continue
         p_id = prog_list[i] if i < len(prog_list) else ""
         c_id = curr_list[i] if i < len(curr_list) else ""
         t = tax_list[i] if i < len(tax_list) else ""
         
-        if not m: continue # Pula vazios
+        prices_data.append({'miles': m, 'prog_id': p_id, 'curr_id': c_id, 'tax': t})
         
-        # Salva estrutura raw
-        prices_data.append({
-            'miles': m, 'prog_id': p_id,
-            'curr_id': c_id, 'tax': t
-        })
-        
-        # Formata texto: "65.000 Latam + R$ 150,00"
         p_name = progs_map.get(p_id, "")
         c_code = currs_map.get(c_id, "")
-        
         try: m_fmt = "{:,.0f}".format(float(m)).replace(',', '.')
         except: m_fmt = m
             
         line = f"{m_fmt} {p_name}"
-        if t:
-            line += f" + {c_code} {t}"
-            
+        if t: line += f" + {c_code} {t}"
         text_lines.append(line)
         
     full_text = "\nOU\n".join(text_lines)
     return json.dumps(prices_data), full_text
 
-# --- MOTOR GRÁFICO (MANTIDO) ---
+# --- MOTOR GRÁFICO (COM TEMAS DE COR) ---
 def create_image_object(data):
+    bg_name = data.get('selected_bg')
+    bg_path = DEFAULT_TEMPLATE_PATH
+    
+    if bg_name:
+        possible_path = os.path.join(TEMPLATES_FOLDER, bg_name)
+        if os.path.exists(possible_path):
+            bg_path = possible_path
+    
     try:
-        img = Image.open(TEMPLATE_PATH).convert("RGBA")
+        img = Image.open(bg_path).convert("RGBA")
         if img.size != (1080, 1080): img = img.resize((1080, 1080))
     except FileNotFoundError:
         img = Image.new('RGBA', (1080, 1080), color=(255, 255, 255, 255))
 
     draw = ImageDraw.Draw(img)
+
+    # --- CONFIGURAÇÃO DE CORES (TEMAS) ---
+    # Defina aqui as cores para cada arquivo de background
+    THEMES = {
+        'first_class.png': {
+            'header': '#d4af37',  # Dourado (Exemplo)
+            'route':  '#d4af37',  # Dourado
+            'text':   '#ffffff',  # Branco (para fundo escuro)
+            'footer': '#d4af37'   # Dourado
+        },
+        'executiva_milhas.png': {
+            'header': '#0054a6',  # Azul Padrão
+            'route':  '#0054a6',
+            'text':   '#222222',  # Preto
+            'footer': '#ffffff'   # Branco (texto sobre barra azul)
+        },
+        # Caso o arquivo não esteja na lista, usa este padrão:
+        'default': {
+            'header': '#0054a6', 
+            'route':  '#0054a6', 
+            'text':   '#222222',
+            'footer': '#ffffff'
+        }
+    }
+
+    # Seleciona o tema baseado no nome do arquivo (ou usa default)
+    theme = THEMES.get(bg_name, THEMES['default'])
+    
+    c_header = theme['header']
+    c_route  = theme['route']
+    c_text   = theme['text']
+    c_footer = theme['footer']
 
     def load_font(path, size):
         try: return ImageFont.truetype(path, size)
@@ -171,7 +198,7 @@ def create_image_object(data):
     font_offer_title = load_font(FONT_BOLD_PATH, 22)
     font_dates = load_font(FONT_BOLD_PATH, 20)
     font_footer_reg = load_font(FONT_REGULAR_PATH, 20)
-    c_blue_header, c_text_dark, c_white = "#0054a6", "#222222", "#ffffff"
+    
     MARGIN_X, MARGIN_TOP = 70, 50
 
     flight_type = (data.get('flight_type') or "").upper()
@@ -179,39 +206,36 @@ def create_image_object(data):
     origin = (data.get('origin') or "")
     dest = (data.get('destination') or "")
 
+    # USANDO AS CORES DO TEMA
     cursor_y = MARGIN_TOP
-    draw.text((MARGIN_X, cursor_y), f"{flight_type} {operator}", fill=c_blue_header, font=font_airline)
+    draw.text((MARGIN_X, cursor_y), f"{flight_type} {operator}", fill=c_header, font=font_airline)
     cursor_y += 50
-    draw.text((MARGIN_X, cursor_y), f"{origin} - {dest}", fill=c_blue_header, font=font_route)
+    draw.text((MARGIN_X, cursor_y), f"{origin} - {dest}", fill=c_route, font=font_route)
     cursor_y += 110
 
     def draw_text_block(start_y, title_rota, prog_txt, cost_txt, dates_txt):
         curr_y = start_y
         if title_rota:
-            draw.text((MARGIN_X, curr_y), title_rota, fill=c_blue_header, font=font_route)
+            draw.text((MARGIN_X, curr_y), title_rota, fill=c_route, font=font_route)
             curr_y += 80
 
-        # OBS: cost_txt agora vem vazio, pois o preço já está embutido no prog_txt
         progs = [p.strip() for p in (prog_txt or "").split('\n') if p.strip()]
-        
         if not progs:
             if cost_txt:
-                draw.text((MARGIN_X, curr_y), f"Investimento: {cost_txt}", fill=c_text_dark, font=font_offer_title)
+                draw.text((MARGIN_X, curr_y), f"Investimento: {cost_txt}", fill=c_text, font=font_offer_title)
                 curr_y += 60
         else:
             for i, p in enumerate(progs):
                 full_offer_text = p
-                # Se ainda houver cost_txt separado, adiciona na primeira linha (compatibilidade)
-                if i == 0 and cost_txt:
-                    full_offer_text += f" + {cost_txt}"
-                draw.text((MARGIN_X, curr_y), full_offer_text, fill=c_text_dark, font=font_offer_title)
+                if i == 0 and cost_txt: full_offer_text += f" + {cost_txt}"
+                draw.text((MARGIN_X, curr_y), full_offer_text, fill=c_text, font=font_offer_title)
                 curr_y += 55 
 
         curr_y += 15 
         d_lines = (dates_txt or "").split('\n')
         for l in d_lines:
             if l.strip():
-                draw.text((MARGIN_X, curr_y), l.strip().upper(), fill=c_text_dark, font=font_dates)
+                draw.text((MARGIN_X, curr_y), l.strip().upper(), fill=c_text, font=font_dates)
                 curr_y += 40 
         return curr_y + 60 
 
@@ -231,10 +255,17 @@ def create_image_object(data):
             d = datetime.strptime(data.get('search_date'), '%Y-%m-%d')
             meses = {1:'Janeiro', 2:'Fevereiro', 3:'Março', 4:'Abril', 5:'Maio', 6:'Junho', 7:'Julho', 8:'Agosto', 9:'Setembro', 10:'Outubro', 11:'Novembro', 12:'Dezembro'}
             dt_str = f"Atualizado: {d.day} de {meses.get(d.month, d.month)}"
-            draw.text((MARGIN_X, text_y), dt_str, fill=c_white, font=font_footer_reg)
+            draw.text((MARGIN_X, text_y), dt_str, fill=c_footer, font=font_footer_reg)
         except: pass
 
     return img.convert("RGB")
+
+# --- HELPER: LISTAR TEMPLATES ---
+def get_available_templates():
+    files = []
+    if os.path.exists(TEMPLATES_FOLDER):
+        files = [f for f in os.listdir(TEMPLATES_FOLDER) if f.lower().endswith('.png')]
+    return sorted(files)
 
 # --- ROTAS ---
 
@@ -298,16 +329,12 @@ def register():
     conn = sqlite3.connect(DB_NAME); conn.row_factory = sqlite3.Row; cursor = conn.cursor()
     
     if request.method == 'POST':
-        # Processa as listas de preços para Ida e Volta
         json_1, text_1 = process_prices("1", request.form, conn)
         json_2, text_2 = process_prices("2", request.form, conn)
         
-        # Prepara dados para a imagem (passa o texto completo em 'program' e vazio em 'cost')
         visual_data = request.form.to_dict()
-        visual_data['program_1'] = text_1
-        visual_data['cost_1'] = "" 
-        visual_data['program_2'] = text_2
-        visual_data['cost_2'] = ""
+        visual_data['program_1'] = text_1; visual_data['cost_1'] = "" 
+        visual_data['program_2'] = text_2; visual_data['cost_2'] = ""
 
         img = create_image_object(visual_data)
         fname = f"search_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
@@ -318,14 +345,15 @@ def register():
                 origin, destination, operator, flight_type, search_date, image_path,
                 program_1, cost_1, dates_1, prices_json_1,
                 program_2, cost_2, dates_2, prices_json_2,
-                origin_2, destination_2
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                origin_2, destination_2, selected_bg
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             visual_data.get('origin'), visual_data.get('destination'), visual_data.get('operator'), visual_data.get('flight_type'), 
             visual_data.get('search_date'), fname,
             text_1, "", visual_data.get('dates_1'), json_1,
             text_2, "", visual_data.get('dates_2'), json_2,
-            visual_data.get('origin_2'), visual_data.get('destination_2')
+            visual_data.get('origin_2'), visual_data.get('destination_2'),
+            visual_data.get('selected_bg')
         ))
         conn.commit(); conn.close()
         return redirect(url_for('list_searches'))
@@ -335,7 +363,7 @@ def register():
     cursor.execute("SELECT * FROM currencies ORDER BY id")
     currencies = cursor.fetchall()
     conn.close()
-    return render_template('register.html', search=None, programs=programs, currencies=currencies)
+    return render_template('register.html', search=None, programs=programs, currencies=currencies, templates=get_available_templates())
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -347,10 +375,8 @@ def edit_search(id):
         json_2, text_2 = process_prices("2", request.form, conn)
         
         visual_data = request.form.to_dict()
-        visual_data['program_1'] = text_1
-        visual_data['cost_1'] = ""
-        visual_data['program_2'] = text_2
-        visual_data['cost_2'] = ""
+        visual_data['program_1'] = text_1; visual_data['cost_1'] = ""
+        visual_data['program_2'] = text_2; visual_data['cost_2'] = ""
         
         img = create_image_object(visual_data)
         fname = f"search_{id}_{datetime.now().strftime('%H%M%S')}.png"
@@ -361,7 +387,7 @@ def edit_search(id):
                 origin=?, destination=?, operator=?, flight_type=?, search_date=?, image_path=?,
                 program_1=?, cost_1=?, dates_1=?, prices_json_1=?,
                 program_2=?, cost_2=?, dates_2=?, prices_json_2=?,
-                origin_2=?, destination_2=?
+                origin_2=?, destination_2=?, selected_bg=?
             WHERE id=?
         ''', (
             visual_data.get('origin'), visual_data.get('destination'), visual_data.get('operator'), visual_data.get('flight_type'), 
@@ -369,15 +395,14 @@ def edit_search(id):
             text_1, "", visual_data.get('dates_1'), json_1,
             text_2, "", visual_data.get('dates_2'), json_2,
             visual_data.get('origin_2'), visual_data.get('destination_2'),
+            visual_data.get('selected_bg'),
             id
         ))
         conn.commit(); conn.close()
         return redirect(url_for('list_searches'))
     
     cursor.execute("SELECT * FROM searches WHERE id = ?", (id,))
-    search = dict(cursor.fetchone()) # Convert to dict to allow modifying
-    
-    # Se existirem JSONs de preço, carrega eles para o template usar
+    search = dict(cursor.fetchone())
     if search.get('prices_json_1'): search['prices_1'] = json.loads(search['prices_json_1'])
     if search.get('prices_json_2'): search['prices_2'] = json.loads(search['prices_json_2'])
     
@@ -385,50 +410,24 @@ def edit_search(id):
     programs = cursor.fetchall()
     cursor.execute("SELECT * FROM currencies ORDER BY id")
     currencies = cursor.fetchall()
-    
     conn.close()
-    return render_template('register.html', search=search, programs=programs, currencies=currencies)
+    return render_template('register.html', search=search, programs=programs, currencies=currencies, templates=get_available_templates())
 
 @app.route('/list')
 @login_required
 def list_searches():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    # 1. Captura os parâmetros da URL (GET)
-    f_date = request.args.get('date')
-    f_origin = request.args.get('origin')
-    f_dest = request.args.get('destination')
-    f_operator = request.args.get('operator')
-
-    # 2. Constrói a Query Dinâmica
+    conn = sqlite3.connect(DB_NAME); conn.row_factory = sqlite3.Row; cursor = conn.cursor()
+    f_date = request.args.get('date'); f_origin = request.args.get('origin')
+    f_dest = request.args.get('destination'); f_operator = request.args.get('operator')
     query = "SELECT * FROM searches WHERE 1=1"
     params = []
-
-    if f_date:
-        query += " AND search_date = ?"
-        params.append(f_date)
-    
-    if f_origin:
-        query += " AND origin LIKE ?"
-        params.append(f'%{f_origin}%') # Busca parcial (Ex: GRU acha VCP/GRU)
-        
-    if f_dest:
-        query += " AND destination LIKE ?"
-        params.append(f'%{f_dest}%')
-        
-    if f_operator:
-        query += " AND operator LIKE ?"
-        params.append(f'%{f_operator}%')
-
+    if f_date: query += " AND search_date = ?"; params.append(f_date)
+    if f_origin: query += " AND origin LIKE ?"; params.append(f'%{f_origin}%')
+    if f_dest: query += " AND destination LIKE ?"; params.append(f'%{f_dest}%')
+    if f_operator: query += " AND operator LIKE ?"; params.append(f'%{f_operator}%')
     query += " ORDER BY id DESC"
-
-    # 3. Executa
     cursor.execute(query, params)
-    searches = cursor.fetchall()
-    conn.close()
-    
+    searches = cursor.fetchall(); conn.close()
     return render_template('list.html', searches=searches)
 
 @app.route('/delete/<int:id>', methods=['POST'])
