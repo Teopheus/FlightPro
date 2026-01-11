@@ -392,8 +392,43 @@ def edit_search(id):
 @app.route('/list')
 @login_required
 def list_searches():
-    conn = sqlite3.connect(DB_NAME); conn.row_factory = sqlite3.Row; cursor = conn.cursor()
-    cursor.execute("SELECT * FROM searches ORDER BY id DESC"); searches = cursor.fetchall(); conn.close()
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # 1. Captura os parâmetros da URL (GET)
+    f_date = request.args.get('date')
+    f_origin = request.args.get('origin')
+    f_dest = request.args.get('destination')
+    f_operator = request.args.get('operator')
+
+    # 2. Constrói a Query Dinâmica
+    query = "SELECT * FROM searches WHERE 1=1"
+    params = []
+
+    if f_date:
+        query += " AND search_date = ?"
+        params.append(f_date)
+    
+    if f_origin:
+        query += " AND origin LIKE ?"
+        params.append(f'%{f_origin}%') # Busca parcial (Ex: GRU acha VCP/GRU)
+        
+    if f_dest:
+        query += " AND destination LIKE ?"
+        params.append(f'%{f_dest}%')
+        
+    if f_operator:
+        query += " AND operator LIKE ?"
+        params.append(f'%{f_operator}%')
+
+    query += " ORDER BY id DESC"
+
+    # 3. Executa
+    cursor.execute(query, params)
+    searches = cursor.fetchall()
+    conn.close()
+    
     return render_template('list.html', searches=searches)
 
 @app.route('/delete/<int:id>', methods=['POST'])

@@ -1,14 +1,62 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-5">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="page-title">Gerenciar Ofertas</h2>
         <p class="text-muted mb-0">Visualize e controle todas as pesquisas geradas.</p>
     </div>
-    <a href="{{ url_for('register') }}" class="btn btn-primary-custom">
+    <a href="{{ url_for('register') }}" class="btn btn-primary-custom shadow-sm">
         <i class="bi bi-plus-lg me-2"></i>Nova Oferta
     </a>
+</div>
+
+<div class="card-custom border-0 shadow-sm mb-4">
+    <form method="GET" action="{{ url_for('list_searches') }}">
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold mb-1">Data</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-calendar3 text-muted"></i></span>
+                        <input type="date" class="form-control border-start-0 ps-0" name="date" value="{{ request.args.get('date', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold mb-1">Origem</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="origin" placeholder="Ex: GRU" value="{{ request.args.get('origin', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold mb-1">Destino</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-pin-map text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="destination" placeholder="Ex: LIS" value="{{ request.args.get('destination', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold mb-1">Cia Aérea</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-airplane text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="operator" placeholder="Ex: Latam" value="{{ request.args.get('operator', '') }}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end mt-4 pt-2 border-top">
+                {% if request.args %}
+                <a href="{{ url_for('list_searches') }}" class="btn btn-light text-muted border me-2">
+                    <i class="bi bi-x-lg me-1"></i> Limpar Filtros
+                </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary-custom px-4">
+                    <i class="bi bi-funnel me-2"></i> Filtrar Resultados
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
 <div class="card-custom p-0 overflow-hidden border-0 shadow-lg">
@@ -18,7 +66,7 @@
                 <tr>
                     <th class="ps-4 py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Rota & Voo</th>
                     <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Status & Cia</th>
-                    <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Custo</th>
+                    <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Custo Estimado</th>
                     <th class="py-4 text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Criado em</th>
                     <th class="pe-4 py-4 text-end text-uppercase text-muted x-small fw-bold border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">Ações</th>
                 </tr>
@@ -28,8 +76,11 @@
                 <tr>
                     <td colspan="5" class="text-center py-5">
                         <div class="d-flex flex-column align-items-center justify-content-center text-muted opacity-50">
-                            <i class="bi bi-airplane-engines fs-1 mb-3"></i>
-                            <span>Nenhuma oferta registrada ainda.</span>
+                            <i class="bi bi-search fs-1 mb-3"></i>
+                            <span class="fw-medium">Nenhum resultado encontrado para os filtros.</span>
+                            {% if request.args %}
+                            <a href="{{ url_for('list_searches') }}" class="btn btn-sm btn-link mt-2">Limpar busca</a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -77,11 +128,11 @@
                         <td class="py-3 border-bottom-0">
                             <div class="d-flex flex-column">
                                 <span class="fw-bold text-dark" style="font-family: monospace; font-size: 1rem;">
-                                    R$ {{ search['cost_1'] or search['cost'] or '0,00' }}
+                                    {{ search['cost_1'] or search['program_1'] or '-' }}
                                 </span>
-                                {% if search['cost_2'] %}
+                                {% if search['cost_2'] or search['program_2'] %}
                                     <small class="text-muted" style="font-size: 0.75rem;">
-                                        Opção 2: R$ {{ search['cost_2'] }}
+                                        + Opção 2
                                     </small>
                                 {% endif %}
                             </div>
