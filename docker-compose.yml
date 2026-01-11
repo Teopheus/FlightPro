@@ -1,4 +1,3 @@
-
 services:
   flight-manager:
     build: .
@@ -7,9 +6,9 @@ services:
       - "5000:5000"
     volumes:
       - ./database.db:/app/database.db
-      - ./static/generated:/app/static/generated
-      - ./app.py:/app/app.py  # <--- ESSENCIAL: Espelha o código Python
-      - ./templates:/app/templates # <--- ESSENCIAL: Espelha o HTML
+      - ./static:/app/static           # <--- MUDANÇA IMPORTANTE AQUI (Sem o /generated)
+      - ./app.py:/app/app.py
+      - ./templates:/app/templates
     environment:
       - FLASK_ENV=development
     restart: unless-stopped
