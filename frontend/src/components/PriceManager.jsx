@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Plus, Trash2, Tag, CreditCard, ChevronDown, Coins, Plane } from 'lucide-react';
+import { Plus, Trash2, Tag, CreditCard, ChevronDown, Coins } from 'lucide-react';
 
-export default function PriceManager({ programs = [], currencies = [], onUpdate }) {
-  const [prices, setPrices] = useState([
-    { id: Date.now(), miles: '', prog_id: '', tax: '', curr_id: '' }
-  ]);
+export default function PriceManager({ programs = [], currencies = [], onUpdate, initialData }) {
+  // ATUALIZAÇÃO: Inicia com initialData se existir, senão usa array padrão vazio
+  const [prices, setPrices] = useState(
+    (initialData && initialData.length > 0) 
+      ? initialData 
+      : [{ id: Date.now(), miles: '', prog_id: '', tax: '', curr_id: '' }]
+  );
 
   const updatePrices = (newPrices) => {
     setPrices(newPrices);
@@ -46,9 +49,8 @@ export default function PriceManager({ programs = [], currencies = [], onUpdate 
         {prices.map((price) => (
           <div key={price.id} className="flex flex-col xl:flex-row gap-3 items-start xl:items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
             
-            {/* 1. INPUT MILHAS (Ajustado) */}
+            {/* 1. INPUT MILHAS */}
             <div className="relative flex-1 w-full xl:w-auto">
-               {/* Padding-right (pr-16) aumentado para caber a palavra MILHAS sem encavalar */}
                <input 
                  type="number" 
                  placeholder="0" 
@@ -76,7 +78,6 @@ export default function PriceManager({ programs = [], currencies = [], onUpdate 
                </div>
             </div>
 
-            {/* Separador Visual */}
             <div className="text-slate-300 hidden xl:flex items-center justify-center font-light text-xl h-full pb-1">+</div>
 
             {/* 3. SELECT MOEDA */}
