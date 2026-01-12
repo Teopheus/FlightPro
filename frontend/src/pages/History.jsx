@@ -22,7 +22,7 @@ export default function History() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // URL DO BACKEND (PYTHON)
-  const API_URL = 'http://localhost:5000';
+  const API_URL = 'http://localhost:5173';
 
   useEffect(() => {
     fetchData();

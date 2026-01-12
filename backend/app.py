@@ -1,3 +1,5 @@
+print("\n\n--- CARREGANDO VERSÃO NOVA DO APP.PY ---\n\n")
+
 import os
 import sqlite3
 import json
@@ -446,5 +448,6 @@ def serve_gen(filename): return send_from_directory(IMAGE_FOLDER, filename)
 
 if __name__ == '__main__':
     if not os.path.exists(DB_NAME): init_and_migrate_db()
-    init_and_migrate_db() # Roda sempre para garantir colunas
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    init_and_migrate_db()
+    # Mudei de 5000 para 5001 aqui embaixo:
+    app.run(debug=True, port=5173, host='0.0.0.0')
