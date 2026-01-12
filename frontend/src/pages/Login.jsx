@@ -2,9 +2,10 @@ import { useState } from 'react';
 import axios from 'axios';
 import { Plane, Lock, User } from 'lucide-react';
 
-// Configuração Global do Axios para enviar cookies de sessão (Importante para o Flask Login)
+// --- CORREÇÃO AQUI ---
+// O Backend Python está na porta 5001, não na 5173
 axios.defaults.withCredentials = true; 
-//axios.defaults.baseURL = 'http://localhost:5000'; // Endereço do seu Python
+//axios.defaults.baseURL = 'http://localhost:5000';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -18,13 +19,21 @@ export default function Login() {
     setError('');
 
     try {
+      // Como definimos o baseURL acima, aqui usamos apenas o caminho relativo
       const response = await axios.post('/api/login', { username, password });
+      
       if (response.data.success) {
-        // Redireciona para o Dashboard (ainda vamos criar, mas já deixamos pronto)
-        window.location.href = '/dashboard';
+        // Sucesso! Vai para o Dashboard
+        window.location.href = '/dashboard'; // Usamos href para garantir reload limpo
       }
     } catch (err) {
-      setError('Usuário ou senha inválidos');
+      console.error("Erro Login:", err);
+      // Mensagem de erro mais detalhada para ajudar
+      if (err.code === "ERR_NETWORK") {
+        setError('Erro de conexão: Verifique se o Python (app.py) está rodando.');
+      } else {
+        setError('Usuário ou senha inválidos');
+      }
     } finally {
       setLoading(false);
     }
@@ -35,7 +44,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         
         {/* Cabeçalho Azul */}
-        <div className="bg-primary p-8 text-center">
+        <div className="bg-blue-600 p-8 text-center">
           <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
             <Plane className="text-white" size={32} />
           </div>
@@ -59,7 +68,7 @@ export default function Login() {
                 <User className="absolute left-3 top-3 text-slate-400" size={20} />
                 <input 
                   type="text" 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
                   placeholder="admin"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -74,7 +83,7 @@ export default function Login() {
                 <Lock className="absolute left-3 top-3 text-slate-400" size={20} />
                 <input 
                   type="password" 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
                   placeholder="••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -86,7 +95,7 @@ export default function Login() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
             >
               {loading ? 'Entrando...' : 'Acessar Sistema'}
             </button>

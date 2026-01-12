@@ -5,17 +5,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [
     react(),
-    // O Tailwind já está sendo carregado via postcss.config.js, não precisa aqui
   ],
   server: {
     proxy: {
-      // Redireciona chamadas da API para o Python
+      // CORREÇÃO: Apontando para a porta 5001 (Onde seu Python está rodando agora)
       '/api': {
         target: 'http://127.0.0.1:5000',
         changeOrigin: true,
         secure: false,
       },
-      // Redireciona imagens estáticas para o Python
+      // Redireciona imagens estáticas também para a porta 5001
       '/static': {
         target: 'http://127.0.0.1:5000',
         changeOrigin: true,

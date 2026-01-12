@@ -17,7 +17,7 @@ app.secret_key = 'segredo_super_secreto_flight_manager'
 
 # --- CORS (Permite que o React localhost:5173 fale com este Python) ---
 CORS(app, 
-     resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}}, 
+     resources={r"/*": {"origins": ["http://localhost:5000", "http://127.0.0.1:5000"]}}, 
      supports_credentials=True,
      expose_headers=["Content-Type", "Authorization"],
      allow_headers=["Content-Type", "Authorization"],
@@ -450,4 +450,4 @@ if __name__ == '__main__':
     if not os.path.exists(DB_NAME): init_and_migrate_db()
     init_and_migrate_db()
     # Mudei de 5000 para 5001 aqui embaixo:
-    app.run(debug=True, port=5173, host='0.0.0.0')
+    app.run(debug=True, port=5000, host='0.0.0.0')
