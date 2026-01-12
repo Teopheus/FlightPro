@@ -1,0 +1,83 @@
+/* 1. IMPORTAÇÃO OBRIGATÓRIA DO TAILWIND (Não apague esta linha!) */
+@import "tailwindcss";
+
+/* 2. ESTILOS GLOBAIS DO SITE */
+body {
+  @apply bg-slate-50 text-slate-900;
+  font-family: 'Inter', sans-serif; /* Garante a fonte bonita */
+}
+
+/* 3. CUSTOMIZAÇÃO DO CALENDÁRIO (Para ficar azul e integrado) */
+/* Remove a sombra padrão e bordas estranhas do plugin */
+.flatpickr-calendar {
+  box-shadow: none !important;
+  border: 1px solid #e2e8f0 !important; /* Cor slate-200 suave */
+  font-family: inherit !important;
+  background: white !important;
+  width: 100% !important; /* Força o calendário a preencher o espaço */
+  max-width: 100% !important;
+}
+
+/* Remove a seta superior do calendário */
+.flatpickr-calendar:before,
+.flatpickr-calendar:after {
+  display: none !important;
+}
+
+/* Cabeçalho do calendário (Mês/Ano) */
+.flatpickr-months .flatpickr-month {
+  background: #0054a6 !important; /* Azul Primary */
+  color: #fff !important;
+  fill: #fff !important;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 10px;
+}
+
+/* Dropdown de meses/anos */
+.flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+  background-color: #0054a6 !important;
+}
+
+/* Dias da semana (Seg, Ter...) */
+.flatpickr-weekdays {
+  background: #0054a6 !important;
+}
+span.flatpickr-weekday {
+  color: #fff !important;
+  font-weight: 600;
+}
+
+/* Dias selecionados (As bolinhas azuis) */
+.flatpickr-day.selected, 
+.flatpickr-day.startRange, 
+.flatpickr-day.endRange, 
+.flatpickr-day.selected.inRange, 
+.flatpickr-day.startRange.inRange, 
+.flatpickr-day.endRange.inRange, 
+.flatpickr-day.selected:focus, 
+.flatpickr-day.startRange:focus, 
+.flatpickr-day.endRange:focus, 
+.flatpickr-day.selected:hover, 
+.flatpickr-day.startRange:hover, 
+.flatpickr-day.endRange:hover {
+  background: #0054a6 !important;
+  border-color: #0054a6 !important;
+  font-weight: bold;
+}
+
+/* Container dos dias */
+.flatpickr-innerContainer {
+  padding-bottom: 10px;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}

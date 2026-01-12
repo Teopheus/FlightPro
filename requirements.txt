@@ -1,5 +1,0 @@
-Flask
-Pillow
-gunicorn
-Flask-Login
-Werkzeug
